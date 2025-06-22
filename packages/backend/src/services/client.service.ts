@@ -284,7 +284,7 @@ export class ClientService {
     const client = await this.getClientById(clientId, studioId);
 
     const oldValues = { ...client };
-    
+
     const updated = await this.db.client.update({
       where: { id: clientId },
       data: {
@@ -348,12 +348,7 @@ export class ClientService {
 
   // Get client statistics
   private async getClientStats(clientId: string) {
-    const [
-      bookingStats,
-      paymentStats,
-      projectStats,
-      lastActivity,
-    ] = await Promise.all([
+    const [bookingStats, paymentStats, projectStats, lastActivity] = await Promise.all([
       // Booking statistics
       this.db.booking.aggregate({
         where: {
@@ -571,11 +566,7 @@ export class ClientService {
     });
 
     // Send portal credentials
-    await this.emailService.sendPortalCredentials(
-      client.email,
-      client.firstName,
-      password
-    );
+    await this.emailService.sendPortalCredentials(client.email, client.firstName, password);
 
     // Audit log
     await this.auditService.log({
@@ -592,7 +583,7 @@ export class ClientService {
   // Calculate loyalty rewards
   public async calculateLoyaltyRewards(clientId: string, studioId: string) {
     const client = await this.getClientById(clientId, studioId);
-    
+
     // Get loyalty settings from studio
     const loyaltySettings = await this.db.systemSetting.findFirst({
       where: {
@@ -617,9 +608,8 @@ export class ClientService {
 
     return {
       points: client.loyaltyPoints,
-      nextRewardPoints: rewards.find(
-        (r: any) => r.pointsRequired > client.loyaltyPoints
-      )?.pointsRequired,
+      nextRewardPoints: rewards.find((r: any) => r.pointsRequired > client.loyaltyPoints)
+        ?.pointsRequired,
       availableRewards,
     };
   }
@@ -655,51 +645,47 @@ export class ClientService {
     const now = new Date();
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    const [
-      totalClients,
-      activeClients,
-      vipClients,
-      revenueData,
-      clientsBySource,
-      monthlyData,
-    ] = await Promise.all([
-      // Total clients
-      this.db.client.count({
-        where: { studioId, deletedAt: null },
-      }),
-      // Active clients (booked in last 6 months)
-      this.db.client.count({
-        where: {
-          studioId,
-          deletedAt: null,
-          bookings: {
-            some: {
-              startDateTime: { gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) },
-              status: { in: ['COMPLETED', 'IN_PROGRESS'] },
+    const [totalClients, activeClients, vipClients, revenueData, clientsBySource, monthlyData] =
+      await Promise.all([
+        // Total clients
+        this.db.client.count({
+          where: { studioId, deletedAt: null },
+        }),
+        // Active clients (booked in last 6 months)
+        this.db.client.count({
+          where: {
+            studioId,
+            deletedAt: null,
+            bookings: {
+              some: {
+                startDateTime: {
+                  gte: new Date(now.getFullYear(), now.getMonth() - 6, 1),
+                },
+                status: { in: ['COMPLETED', 'IN_PROGRESS'] },
+              },
             },
           },
-        },
-      }),
-      // VIP clients
-      this.db.client.count({
-        where: { studioId, isVip: true, deletedAt: null },
-      }),
-      // Total revenue
-      this.db.payment.aggregate({
-        where: {
-          studio: { id: studioId },
-          status: 'COMPLETED',
-        },
-        _sum: { amount: true },
-      }),
-      // Clients by source
-      this.db.client.groupBy({
-        by: ['source'],
-        where: { studioId, deletedAt: null },
-        _count: true,
-      }),
-      // Monthly growth
-      this.db.$queryRaw<any[]>`
+        }),
+        // VIP clients
+        this.db.client.count({
+          where: { studioId, isVip: true, deletedAt: null },
+        }),
+        // Total revenue
+        this.db.payment.aggregate({
+          where: {
+            studio: { id: studioId },
+            status: 'COMPLETED',
+          },
+          _sum: { amount: true },
+        }),
+        // Clients by source
+        this.db.client.groupBy({
+          by: ['source'],
+          where: { studioId, deletedAt: null },
+          _count: true,
+        }),
+        // Monthly growth
+        this.db.$queryRaw<any[]>`
         SELECT 
           DATE_TRUNC('month', c."createdAt") as month,
           COUNT(DISTINCT c.id) as new_clients,
@@ -714,7 +700,7 @@ export class ClientService {
         GROUP BY DATE_TRUNC('month', c."createdAt")
         ORDER BY month DESC
       `,
-    ]);
+      ]);
 
     // Calculate repeat client rate
     const repeatClients = await this.db.client.count({

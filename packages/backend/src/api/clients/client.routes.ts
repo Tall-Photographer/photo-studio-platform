@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Client routes - implementation in progress',
     endpoints: [
@@ -25,8 +25,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'POST /api/v1/clients - Create client',
       'PUT /api/v1/clients/:id - Update client',
       'DELETE /api/v1/clients/:id - Delete client',
-      'GET /api/v1/clients/:id/bookings - Get client bookings'
-    ]
+      'GET /api/v1/clients/:id/bookings - Get client bookings',
+    ],
   });
 });
 

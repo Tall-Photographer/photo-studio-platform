@@ -16,7 +16,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Login functionality coming soon',
-      user: { email }
+      user: { email },
     };
   }
 
@@ -25,7 +25,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Registration functionality coming soon',
-      user: userData
+      user: userData,
     };
   }
 }

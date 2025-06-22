@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Booking routes - implementation in progress',
     endpoints: [
@@ -25,8 +25,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'POST /api/v1/bookings - Create booking',
       'PUT /api/v1/bookings/:id - Update booking',
       'DELETE /api/v1/bookings/:id - Cancel booking',
-      'GET /api/v1/bookings/calendar - Calendar view'
-    ]
+      'GET /api/v1/bookings/calendar - Calendar view',
+    ],
   });
 });
 

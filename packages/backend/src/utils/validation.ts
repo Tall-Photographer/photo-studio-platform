@@ -1,10 +1,10 @@
 // packages/backend/src/utils/validation.ts
 import { z } from 'zod';
-import { 
-  UserRole, 
-  BookingStatus, 
-  ProjectStatus, 
-  InvoiceStatus, 
+import {
+  UserRole,
+  BookingStatus,
+  ProjectStatus,
+  InvoiceStatus,
   PaymentStatus,
   PaymentGateway,
   Currency,
@@ -13,7 +13,7 @@ import {
   EquipmentStatus,
   ExpenseCategory,
   NotificationType,
-  CampaignStatus
+  CampaignStatus,
 } from '@prisma/client';
 
 // Common schemas
@@ -28,19 +28,21 @@ export const idSchema = z.string().cuid();
 
 export const emailSchema = z.string().email().toLowerCase();
 
-export const phoneSchema = z.string().regex(
-  /^\+?[1-9]\d{1,14}$/,
-  'Invalid phone number format'
-).optional();
+export const phoneSchema = z
+  .string()
+  .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
+  .optional();
 
 export const currencySchema = z.nativeEnum(Currency);
 
-export const dateRangeSchema = z.object({
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-}).refine(data => data.endDate >= data.startDate, {
-  message: 'End date must be after start date',
-});
+export const dateRangeSchema = z
+  .object({
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+  })
+  .refine((data) => data.endDate >= data.startDate, {
+    message: 'End date must be after start date',
+  });
 
 // Auth schemas
 export const registerSchema = z.object({
@@ -67,7 +69,9 @@ export const resetPasswordSchema = z.object({
 // Studio schemas
 export const createStudioSchema = z.object({
   name: z.string().min(1).max(100),
-  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
   email: emailSchema,
   phone: phoneSchema,
   website: z.string().url().optional(),
@@ -81,13 +85,23 @@ export const createStudioSchema = z.object({
   taxRate: z.number().min(0).max(100).default(0),
   taxId: z.string().optional(),
   logo: z.string().url().optional(),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#000000'),
-  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#ffffff'),
-  businessHours: z.record(z.object({
-    open: z.string().regex(/^\d{2}:\d{2}$/),
-    close: z.string().regex(/^\d{2}:\d{2}$/),
-    closed: z.boolean().optional(),
-  })).optional(),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .default('#000000'),
+  secondaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .default('#ffffff'),
+  businessHours: z
+    .record(
+      z.object({
+        open: z.string().regex(/^\d{2}:\d{2}$/),
+        close: z.string().regex(/^\d{2}:\d{2}$/),
+        closed: z.boolean().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateStudioSchema = createStudioSchema.partial();
@@ -131,67 +145,75 @@ export const createClientSchema = z.object({
 export const updateClientSchema = createClientSchema.partial();
 
 // Booking schemas
-export const createBookingSchema = z.object({
-  clientId: idSchema,
-  title: z.string().min(1).max(200),
-  description: z.string().optional(),
-  type: z.string().min(1).max(50),
-  startDateTime: z.coerce.date(),
-  endDateTime: z.coerce.date(),
-  
-  // Location fields
-  locationType: z.nativeEnum(LocationType).default('STUDIO'),
-  location: z.string().optional(),
-  locationAddress: z.string().optional(),
-  locationCity: z.string().optional(),
-  locationState: z.string().optional(),
-  locationCountry: z.string().optional(),
-  locationPostalCode: z.string().optional(),
-  locationLatitude: z.number().min(-90).max(90).optional(),
-  locationLongitude: z.number().min(-180).max(180).optional(),
-  locationNotes: z.string().optional(),
-  travelTime: z.number().min(0).optional(),
-  travelDistance: z.number().min(0).optional(),
-  
-  // Weather fields for outdoor shoots
-  weatherRequired: z.boolean().default(false),
-  preferredWeather: z.array(z.nativeEnum(WeatherCondition)).optional(),
-  weatherBackupPlan: z.string().optional(),
-  
-  // Financial
-  totalAmount: z.number().positive(),
-  depositAmount: z.number().min(0).default(0),
-  discountAmount: z.number().min(0).default(0),
-  currency: currencySchema,
-  
-  // Settings
-  isRecurring: z.boolean().default(false),
-  recurringPattern: z.object({
-    frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
-    interval: z.number().positive(),
-    endDate: z.coerce.date().optional(),
-    daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
-  }).optional(),
-  
-  bufferTimeBefore: z.number().min(0).default(0),
-  bufferTimeAfter: z.number().min(0).default(0),
-  
-  // Assignments
-  assignments: z.array(z.object({
-    userId: idSchema,
-    role: z.string(),
-    isPrimary: z.boolean().default(false),
-    rate: z.number().positive().optional(),
-  })).optional(),
-  
-  equipmentIds: z.array(idSchema).optional(),
-  roomIds: z.array(idSchema).optional(),
-  
-  internalNotes: z.string().optional(),
-  customFields: z.record(z.any()).optional(),
-}).refine(data => data.endDateTime > data.startDateTime, {
-  message: 'End time must be after start time',
-});
+export const createBookingSchema = z
+  .object({
+    clientId: idSchema,
+    title: z.string().min(1).max(200),
+    description: z.string().optional(),
+    type: z.string().min(1).max(50),
+    startDateTime: z.coerce.date(),
+    endDateTime: z.coerce.date(),
+
+    // Location fields
+    locationType: z.nativeEnum(LocationType).default('STUDIO'),
+    location: z.string().optional(),
+    locationAddress: z.string().optional(),
+    locationCity: z.string().optional(),
+    locationState: z.string().optional(),
+    locationCountry: z.string().optional(),
+    locationPostalCode: z.string().optional(),
+    locationLatitude: z.number().min(-90).max(90).optional(),
+    locationLongitude: z.number().min(-180).max(180).optional(),
+    locationNotes: z.string().optional(),
+    travelTime: z.number().min(0).optional(),
+    travelDistance: z.number().min(0).optional(),
+
+    // Weather fields for outdoor shoots
+    weatherRequired: z.boolean().default(false),
+    preferredWeather: z.array(z.nativeEnum(WeatherCondition)).optional(),
+    weatherBackupPlan: z.string().optional(),
+
+    // Financial
+    totalAmount: z.number().positive(),
+    depositAmount: z.number().min(0).default(0),
+    discountAmount: z.number().min(0).default(0),
+    currency: currencySchema,
+
+    // Settings
+    isRecurring: z.boolean().default(false),
+    recurringPattern: z
+      .object({
+        frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+        interval: z.number().positive(),
+        endDate: z.coerce.date().optional(),
+        daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+      })
+      .optional(),
+
+    bufferTimeBefore: z.number().min(0).default(0),
+    bufferTimeAfter: z.number().min(0).default(0),
+
+    // Assignments
+    assignments: z
+      .array(
+        z.object({
+          userId: idSchema,
+          role: z.string(),
+          isPrimary: z.boolean().default(false),
+          rate: z.number().positive().optional(),
+        })
+      )
+      .optional(),
+
+    equipmentIds: z.array(idSchema).optional(),
+    roomIds: z.array(idSchema).optional(),
+
+    internalNotes: z.string().optional(),
+    customFields: z.record(z.any()).optional(),
+  })
+  .refine((data) => data.endDateTime > data.startDateTime, {
+    message: 'End time must be after start time',
+  });
 
 export const updateBookingSchema = createBookingSchema.partial().extend({
   status: z.nativeEnum(BookingStatus).optional(),
@@ -262,11 +284,15 @@ export const createProjectSchema = z.object({
   deliveryDeadline: z.coerce.date().optional(),
   deliveryMethod: z.string().optional(),
   deliveryNotes: z.string().optional(),
-  assignments: z.array(z.object({
-    userId: idSchema,
-    role: z.string(),
-    estimatedHours: z.number().positive().optional(),
-  })).optional(),
+  assignments: z
+    .array(
+      z.object({
+        userId: idSchema,
+        role: z.string(),
+        estimatedHours: z.number().positive().optional(),
+      })
+    )
+    .optional(),
   editorId: idSchema.optional(),
   internalNotes: z.string().optional(),
   clientNotes: z.string().optional(),
@@ -284,13 +310,17 @@ export const createInvoiceSchema = z.object({
   bookingId: idSchema.optional(),
   issueDate: z.coerce.date().default(() => new Date()),
   dueDate: z.coerce.date(),
-  lineItems: z.array(z.object({
-    description: z.string().min(1),
-    quantity: z.number().positive(),
-    unitPrice: z.number().positive(),
-    taxable: z.boolean().default(true),
-    category: z.string().optional(),
-  })).min(1),
+  lineItems: z
+    .array(
+      z.object({
+        description: z.string().min(1),
+        quantity: z.number().positive(),
+        unitPrice: z.number().positive(),
+        taxable: z.boolean().default(true),
+        category: z.string().optional(),
+      })
+    )
+    .min(1),
   discountPercentage: z.number().min(0).max(100).default(0),
   discountAmount: z.number().min(0).default(0),
   taxRate: z.number().min(0).max(100).default(0),
@@ -335,11 +365,15 @@ export const sendEmailSchema = z.object({
   subject: z.string().min(1).max(200),
   htmlContent: z.string(),
   textContent: z.string().optional(),
-  attachments: z.array(z.object({
-    filename: z.string(),
-    content: z.string(),
-    contentType: z.string(),
-  })).optional(),
+  attachments: z
+    .array(
+      z.object({
+        filename: z.string(),
+        content: z.string(),
+        contentType: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export const createEmailCampaignSchema = z.object({
@@ -350,16 +384,18 @@ export const createEmailCampaignSchema = z.object({
   replyTo: emailSchema.optional(),
   htmlContent: z.string(),
   textContent: z.string().optional(),
-  audienceFilter: z.object({
-    tags: z.array(z.string()).optional(),
-    minBookings: z.number().min(0).optional(),
-    maxBookings: z.number().min(0).optional(),
-    minSpent: z.number().min(0).optional(),
-    maxSpent: z.number().min(0).optional(),
-    hasMarketingConsent: z.boolean().optional(),
-    lastBookingBefore: z.coerce.date().optional(),
-    lastBookingAfter: z.coerce.date().optional(),
-  }).optional(),
+  audienceFilter: z
+    .object({
+      tags: z.array(z.string()).optional(),
+      minBookings: z.number().min(0).optional(),
+      maxBookings: z.number().min(0).optional(),
+      minSpent: z.number().min(0).optional(),
+      maxSpent: z.number().min(0).optional(),
+      hasMarketingConsent: z.boolean().optional(),
+      lastBookingBefore: z.coerce.date().optional(),
+      lastBookingAfter: z.coerce.date().optional(),
+    })
+    .optional(),
   testEmails: z.array(emailSchema).optional(),
   scheduledFor: z.coerce.date().optional(),
   tags: z.array(z.string()).optional(),

@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Invoice routes - implementation in progress',
     endpoints: [
@@ -26,8 +26,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'PUT /api/v1/invoices/:id - Update invoice',
       'DELETE /api/v1/invoices/:id - Delete invoice',
       'POST /api/v1/invoices/:id/send - Send invoice',
-      'GET /api/v1/invoices/:id/pdf - Download PDF'
-    ]
+      'GET /api/v1/invoices/:id/pdf - Download PDF',
+    ],
   });
 });
 

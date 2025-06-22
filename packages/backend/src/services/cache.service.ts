@@ -167,7 +167,7 @@ export class CacheService {
       multi.incr(key);
       multi.expire(key, Math.ceil(windowMs / 1000));
       const results = await multi.exec();
-      return results?.[0]?.[1] as number || 0;
+      return (results?.[0]?.[1] as number) || 0;
     } catch (error) {
       this.logger.error('Rate limit increment error:', error);
       return 0;

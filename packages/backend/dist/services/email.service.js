@@ -1,125 +1,146 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
+var __createBinding =
+  (this && this.__createBinding) ||
+  (Object.create
+    ? function (o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (
+          !desc ||
+          ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)
+        ) {
+          desc = {
+            enumerable: true,
+            get: function () {
+              return m[k];
+            },
+          };
+        }
+        Object.defineProperty(o, k2, desc);
+      }
+    : function (o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
+      });
+var __setModuleDefault =
+  (this && this.__setModuleDefault) ||
+  (Object.create
+    ? function (o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }
+    : function (o, v) {
+        o["default"] = v;
+      });
+var __importStar =
+  (this && this.__importStar) ||
+  (function () {
+    var ownKeys = function (o) {
+      ownKeys =
+        Object.getOwnPropertyNames ||
+        function (o) {
+          var ar = [];
+          for (var k in o)
+            if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+          return ar;
         };
-        return ownKeys(o);
+      return ownKeys(o);
     };
     return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
+      if (mod && mod.__esModule) return mod;
+      var result = {};
+      if (mod != null)
+        for (var k = ownKeys(mod), i = 0; i < k.length; i++)
+          if (k[i] !== "default") __createBinding(result, mod, k[i]);
+      __setModuleDefault(result, mod);
+      return result;
     };
-})();
+  })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
 const nodemailer = __importStar(require("nodemailer"));
 const logger_service_1 = require("./logger.service");
 class EmailService {
-    constructor() {
-        this.logger = logger_service_1.LoggerService.getInstance();
-        this.fromEmail = process.env.FROM_EMAIL || 'noreply@shootlinks.com';
-        this.fromName = process.env.FROM_NAME || 'Shootlinks Platform';
-        this.setupTransporter();
+  constructor() {
+    this.logger = logger_service_1.LoggerService.getInstance();
+    this.fromEmail = process.env.FROM_EMAIL || "noreply@shootlinks.com";
+    this.fromName = process.env.FROM_NAME || "Shootlinks Platform";
+    this.setupTransporter();
+  }
+  setupTransporter() {
+    if (process.env.SENDGRID_API_KEY) {
+      this.setupSendGrid();
+    } else if (process.env.SMTP_HOST) {
+      this.setupSMTP();
+    } else {
+      this.setupTestTransporter();
     }
-    setupTransporter() {
-        if (process.env.SENDGRID_API_KEY) {
-            this.setupSendGrid();
-        }
-        else if (process.env.SMTP_HOST) {
-            this.setupSMTP();
-        }
-        else {
-            this.setupTestTransporter();
-        }
-    }
-    setupSendGrid() {
-        this.transporter = nodemailer.createTransporter({
-            host: 'smtp.sendgrid.net',
-            port: 587,
-            secure: false,
-            auth: {
-                user: 'apikey',
-                pass: process.env.SENDGRID_API_KEY,
-            },
+  }
+  setupSendGrid() {
+    this.transporter = nodemailer.createTransporter({
+      host: "smtp.sendgrid.net",
+      port: 587,
+      secure: false,
+      auth: {
+        user: "apikey",
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    });
+    this.logger.info("Email service initialized with SendGrid");
+  }
+  setupSMTP() {
+    const config = {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587", 10),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    };
+    this.transporter = nodemailer.createTransporter(config);
+    this.logger.info("Email service initialized with SMTP");
+  }
+  setupTestTransporter() {
+    this.transporter = nodemailer.createTransporter({
+      streamTransport: true,
+      newline: "unix",
+      buffer: true,
+    });
+    this.logger.warn(
+      "Email service initialized in test mode - emails will be logged to console",
+    );
+  }
+  async sendEmail(to, subject, html, text) {
+    try {
+      const mailOptions = {
+        from: `${this.fromName} <${this.fromEmail}>`,
+        to,
+        subject,
+        html,
+        text: text || this.stripHtml(html),
+      };
+      const result = await this.transporter.sendMail(mailOptions);
+      if (process.env.NODE_ENV === "development") {
+        this.logger.debug("Email sent:", {
+          to,
+          subject,
+          messageId: result.messageId,
         });
-        this.logger.info('Email service initialized with SendGrid');
+      } else {
+        this.logger.info(`Email sent to ${to}: ${subject}`);
+      }
+    } catch (error) {
+      this.logger.error("Failed to send email:", error);
+      throw new Error("Failed to send email");
     }
-    setupSMTP() {
-        const config = {
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        };
-        this.transporter = nodemailer.createTransporter(config);
-        this.logger.info('Email service initialized with SMTP');
-    }
-    setupTestTransporter() {
-        this.transporter = nodemailer.createTransporter({
-            streamTransport: true,
-            newline: 'unix',
-            buffer: true,
-        });
-        this.logger.warn('Email service initialized in test mode - emails will be logged to console');
-    }
-    async sendEmail(to, subject, html, text) {
-        try {
-            const mailOptions = {
-                from: `${this.fromName} <${this.fromEmail}>`,
-                to,
-                subject,
-                html,
-                text: text || this.stripHtml(html),
-            };
-            const result = await this.transporter.sendMail(mailOptions);
-            if (process.env.NODE_ENV === 'development') {
-                this.logger.debug('Email sent:', {
-                    to,
-                    subject,
-                    messageId: result.messageId,
-                });
-            }
-            else {
-                this.logger.info(`Email sent to ${to}: ${subject}`);
-            }
-        }
-        catch (error) {
-            this.logger.error('Failed to send email:', error);
-            throw new Error('Failed to send email');
-        }
-    }
-    stripHtml(html) {
-        return html.replace(/<[^>]*>/g, '');
-    }
-    async sendVerificationEmail(email, firstName, token) {
-        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-        const subject = 'Verify Your Email Address - Shootlinks';
-        const html = `
+  }
+  stripHtml(html) {
+    return html.replace(/<[^>]*>/g, "");
+  }
+  async sendVerificationEmail(email, firstName, token) {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const subject = "Verify Your Email Address - Shootlinks";
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -163,12 +184,12 @@ class EmailService {
       </body>
       </html>
     `;
-        await this.sendEmail(email, subject, html);
-    }
-    async sendPasswordResetEmail(email, firstName, token) {
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-        const subject = 'Reset Your Password - Shootlinks';
-        const html = `
+    await this.sendEmail(email, subject, html);
+  }
+  async sendPasswordResetEmail(email, firstName, token) {
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const subject = "Reset Your Password - Shootlinks";
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -217,11 +238,11 @@ class EmailService {
       </body>
       </html>
     `;
-        await this.sendEmail(email, subject, html);
-    }
-    async sendBookingConfirmation(email, clientName, bookingDetails) {
-        const subject = `Booking Confirmation - ${bookingDetails.title}`;
-        const html = `
+    await this.sendEmail(email, subject, html);
+  }
+  async sendBookingConfirmation(email, clientName, bookingDetails) {
+    const subject = `Booking Confirmation - ${bookingDetails.title}`;
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -263,7 +284,7 @@ class EmailService {
               </div>
               <div class="detail-row">
                 <span><strong>Location:</strong></span>
-                <span>${bookingDetails.location || 'Studio'}</span>
+                <span>${bookingDetails.location || "Studio"}</span>
               </div>
               <div class="detail-row">
                 <span><strong>Total Amount:</strong></span>
@@ -282,18 +303,17 @@ class EmailService {
       </body>
       </html>
     `;
-        await this.sendEmail(email, subject, html);
+    await this.sendEmail(email, subject, html);
+  }
+  async testConnection() {
+    try {
+      await this.transporter.verify();
+      this.logger.info("Email service connection verified");
+      return true;
+    } catch (error) {
+      this.logger.error("Email service connection failed:", error);
+      return false;
     }
-    async testConnection() {
-        try {
-            await this.transporter.verify();
-            this.logger.info('Email service connection verified');
-            return true;
-        }
-        catch (error) {
-            this.logger.error('Email service connection failed:', error);
-            return false;
-        }
-    }
+  }
 }
 exports.EmailService = EmailService;

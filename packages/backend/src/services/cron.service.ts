@@ -17,14 +17,14 @@ export class CronService {
 
   public start(): void {
     if (this.isRunning) return;
-    
+
     this.logger.info('Cron service started');
     this.isRunning = true;
   }
 
   public stop(): void {
     if (!this.isRunning) return;
-    
+
     this.logger.info('Cron service stopped');
     this.isRunning = false;
   }

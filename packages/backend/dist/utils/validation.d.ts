@@ -1,41 +1,58 @@
-import { z } from 'zod';
-export declare const paginationSchema: z.ZodObject<{
+import { z } from "zod";
+export declare const paginationSchema: z.ZodObject<
+  {
     page: z.ZodDefault<z.ZodNumber>;
     limit: z.ZodDefault<z.ZodNumber>;
     sortBy: z.ZodOptional<z.ZodString>;
     sortOrder: z.ZodDefault<z.ZodEnum<["asc", "desc"]>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     limit: number;
     page: number;
     sortOrder: "desc" | "asc";
     sortBy?: string | undefined;
-}, {
+  },
+  {
     limit?: number | undefined;
     page?: number | undefined;
     sortBy?: string | undefined;
     sortOrder?: "desc" | "asc" | undefined;
-}>;
+  }
+>;
 export declare const idSchema: z.ZodString;
 export declare const emailSchema: z.ZodString;
 export declare const phoneSchema: z.ZodOptional<z.ZodString>;
 export declare const currencySchema: z.ZodNativeEnum<any>;
-export declare const dateRangeSchema: z.ZodEffects<z.ZodObject<{
-    startDate: z.ZodDate;
-    endDate: z.ZodDate;
-}, "strip", z.ZodTypeAny, {
+export declare const dateRangeSchema: z.ZodEffects<
+  z.ZodObject<
+    {
+      startDate: z.ZodDate;
+      endDate: z.ZodDate;
+    },
+    "strip",
+    z.ZodTypeAny,
+    {
+      startDate: Date;
+      endDate: Date;
+    },
+    {
+      startDate: Date;
+      endDate: Date;
+    }
+  >,
+  {
     startDate: Date;
     endDate: Date;
-}, {
+  },
+  {
     startDate: Date;
     endDate: Date;
-}>, {
-    startDate: Date;
-    endDate: Date;
-}, {
-    startDate: Date;
-    endDate: Date;
-}>;
-export declare const registerSchema: z.ZodObject<{
+  }
+>;
+export declare const registerSchema: z.ZodObject<
+  {
     email: z.ZodString;
     password: z.ZodString;
     firstName: z.ZodString;
@@ -43,7 +60,10 @@ export declare const registerSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     studioId: z.ZodString;
     role: z.ZodDefault<z.ZodNativeEnum<any>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     email?: unknown;
     password?: unknown;
@@ -52,7 +72,8 @@ export declare const registerSchema: z.ZodObject<{
     phone?: unknown;
     studioId?: unknown;
     role?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     email?: unknown;
     password?: unknown;
@@ -61,31 +82,45 @@ export declare const registerSchema: z.ZodObject<{
     phone?: unknown;
     studioId?: unknown;
     role?: unknown;
-}>;
-export declare const loginSchema: z.ZodObject<{
+  }
+>;
+export declare const loginSchema: z.ZodObject<
+  {
     email: z.ZodString;
     password: z.ZodString;
     remember: z.ZodOptional<z.ZodBoolean>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     email: string;
     password: string;
     remember?: boolean | undefined;
-}, {
+  },
+  {
     email: string;
     password: string;
     remember?: boolean | undefined;
-}>;
-export declare const resetPasswordSchema: z.ZodObject<{
+  }
+>;
+export declare const resetPasswordSchema: z.ZodObject<
+  {
     token: z.ZodString;
     password: z.ZodString;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     password: string;
     token: string;
-}, {
+  },
+  {
     password: string;
     token: string;
-}>;
-export declare const createStudioSchema: z.ZodObject<{
+  }
+>;
+export declare const createStudioSchema: z.ZodObject<
+  {
     name: z.ZodString;
     slug: z.ZodString;
     email: z.ZodString;
@@ -103,20 +138,34 @@ export declare const createStudioSchema: z.ZodObject<{
     logo: z.ZodOptional<z.ZodString>;
     primaryColor: z.ZodDefault<z.ZodString>;
     secondaryColor: z.ZodDefault<z.ZodString>;
-    businessHours: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        open: z.ZodString;
-        close: z.ZodString;
-        closed: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        close: string;
-        open: string;
-        closed?: boolean | undefined;
-    }, {
-        close: string;
-        open: string;
-        closed?: boolean | undefined;
-    }>>>;
-}, "strip", z.ZodTypeAny, {
+    businessHours: z.ZodOptional<
+      z.ZodRecord<
+        z.ZodString,
+        z.ZodObject<
+          {
+            open: z.ZodString;
+            close: z.ZodString;
+            closed: z.ZodOptional<z.ZodBoolean>;
+          },
+          "strip",
+          z.ZodTypeAny,
+          {
+            close: string;
+            open: string;
+            closed?: boolean | undefined;
+          },
+          {
+            close: string;
+            open: string;
+            closed?: boolean | undefined;
+          }
+        >
+      >
+    >;
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     slug?: unknown;
@@ -136,7 +185,8 @@ export declare const createStudioSchema: z.ZodObject<{
     primaryColor?: unknown;
     secondaryColor?: unknown;
     businessHours?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     slug?: unknown;
@@ -156,8 +206,10 @@ export declare const createStudioSchema: z.ZodObject<{
     primaryColor?: unknown;
     secondaryColor?: unknown;
     businessHours?: unknown;
-}>;
-export declare const updateStudioSchema: z.ZodObject<{
+  }
+>;
+export declare const updateStudioSchema: z.ZodObject<
+  {
     name: z.ZodOptional<z.ZodString>;
     slug: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
@@ -175,20 +227,36 @@ export declare const updateStudioSchema: z.ZodObject<{
     logo: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     primaryColor: z.ZodOptional<z.ZodDefault<z.ZodString>>;
     secondaryColor: z.ZodOptional<z.ZodDefault<z.ZodString>>;
-    businessHours: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        open: z.ZodString;
-        close: z.ZodString;
-        closed: z.ZodOptional<z.ZodBoolean>;
-    }, "strip", z.ZodTypeAny, {
-        close: string;
-        open: string;
-        closed?: boolean | undefined;
-    }, {
-        close: string;
-        open: string;
-        closed?: boolean | undefined;
-    }>>>>;
-}, "strip", z.ZodTypeAny, {
+    businessHours: z.ZodOptional<
+      z.ZodOptional<
+        z.ZodRecord<
+          z.ZodString,
+          z.ZodObject<
+            {
+              open: z.ZodString;
+              close: z.ZodString;
+              closed: z.ZodOptional<z.ZodBoolean>;
+            },
+            "strip",
+            z.ZodTypeAny,
+            {
+              close: string;
+              open: string;
+              closed?: boolean | undefined;
+            },
+            {
+              close: string;
+              open: string;
+              closed?: boolean | undefined;
+            }
+          >
+        >
+      >
+    >;
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     slug?: unknown;
@@ -208,7 +276,8 @@ export declare const updateStudioSchema: z.ZodObject<{
     primaryColor?: unknown;
     secondaryColor?: unknown;
     businessHours?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     slug?: unknown;
@@ -228,8 +297,10 @@ export declare const updateStudioSchema: z.ZodObject<{
     primaryColor?: unknown;
     secondaryColor?: unknown;
     businessHours?: unknown;
-}>;
-export declare const createUserSchema: z.ZodObject<{
+  }
+>;
+export declare const createUserSchema: z.ZodObject<
+  {
     email: z.ZodString;
     password: z.ZodOptional<z.ZodString>;
     firstName: z.ZodString;
@@ -240,7 +311,10 @@ export declare const createUserSchema: z.ZodObject<{
     commissionRate: z.ZodOptional<z.ZodNumber>;
     skills: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     specializations: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     email?: unknown;
     password?: unknown;
@@ -252,7 +326,8 @@ export declare const createUserSchema: z.ZodObject<{
     commissionRate?: unknown;
     skills?: unknown;
     specializations?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     email?: unknown;
     password?: unknown;
@@ -264,19 +339,29 @@ export declare const createUserSchema: z.ZodObject<{
     commissionRate?: unknown;
     skills?: unknown;
     specializations?: unknown;
-}>;
-export declare const updateUserSchema: z.ZodObject<Omit<{
-    email: z.ZodOptional<z.ZodString>;
-    password: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    firstName: z.ZodOptional<z.ZodString>;
-    lastName: z.ZodOptional<z.ZodString>;
-    phone: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    role: z.ZodOptional<z.ZodNativeEnum<any>>;
-    hourlyRate: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
-    commissionRate: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
-    skills: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-    specializations: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-}, "email">, "strip", z.ZodTypeAny, {
+  }
+>;
+export declare const updateUserSchema: z.ZodObject<
+  Omit<
+    {
+      email: z.ZodOptional<z.ZodString>;
+      password: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+      firstName: z.ZodOptional<z.ZodString>;
+      lastName: z.ZodOptional<z.ZodString>;
+      phone: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+      role: z.ZodOptional<z.ZodNativeEnum<any>>;
+      hourlyRate: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
+      commissionRate: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
+      skills: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+      specializations: z.ZodOptional<
+        z.ZodOptional<z.ZodArray<z.ZodString, "many">>
+      >;
+    },
+    "email"
+  >,
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     lastName?: unknown;
     firstName?: unknown;
@@ -287,7 +372,8 @@ export declare const updateUserSchema: z.ZodObject<Omit<{
     commissionRate?: unknown;
     skills?: unknown;
     specializations?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     lastName?: unknown;
     firstName?: unknown;
@@ -298,8 +384,10 @@ export declare const updateUserSchema: z.ZodObject<Omit<{
     commissionRate?: unknown;
     skills?: unknown;
     specializations?: unknown;
-}>;
-export declare const createClientSchema: z.ZodObject<{
+  }
+>;
+export declare const createClientSchema: z.ZodObject<
+  {
     firstName: z.ZodString;
     lastName: z.ZodString;
     email: z.ZodString;
@@ -316,7 +404,10 @@ export declare const createClientSchema: z.ZodObject<{
     marketingConsent: z.ZodDefault<z.ZodBoolean>;
     source: z.ZodOptional<z.ZodString>;
     referredBy: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     email: string;
     lastName: string;
     firstName: string;
@@ -333,7 +424,8 @@ export declare const createClientSchema: z.ZodObject<{
     postalCode?: string | undefined;
     notes?: string | undefined;
     referredBy?: string | undefined;
-}, {
+  },
+  {
     email: string;
     lastName: string;
     firstName: string;
@@ -350,8 +442,10 @@ export declare const createClientSchema: z.ZodObject<{
     notes?: string | undefined;
     marketingConsent?: boolean | undefined;
     referredBy?: string | undefined;
-}>;
-export declare const updateClientSchema: z.ZodObject<{
+  }
+>;
+export declare const updateClientSchema: z.ZodObject<
+  {
     firstName: z.ZodOptional<z.ZodString>;
     lastName: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
@@ -362,13 +456,18 @@ export declare const updateClientSchema: z.ZodObject<{
     state: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     country: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     postalCode: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    preferredContactMethod: z.ZodOptional<z.ZodDefault<z.ZodEnum<["email", "phone", "sms"]>>>;
+    preferredContactMethod: z.ZodOptional<
+      z.ZodDefault<z.ZodEnum<["email", "phone", "sms"]>>
+    >;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     marketingConsent: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     source: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     referredBy: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     company?: string | undefined;
     email?: string | undefined;
     lastName?: string | undefined;
@@ -385,7 +484,8 @@ export declare const updateClientSchema: z.ZodObject<{
     notes?: string | undefined;
     marketingConsent?: boolean | undefined;
     referredBy?: string | undefined;
-}, {
+  },
+  {
     company?: string | undefined;
     email?: string | undefined;
     lastName?: string | undefined;
@@ -402,73 +502,173 @@ export declare const updateClientSchema: z.ZodObject<{
     notes?: string | undefined;
     marketingConsent?: boolean | undefined;
     referredBy?: string | undefined;
-}>;
-export declare const createBookingSchema: z.ZodEffects<z.ZodObject<{
-    clientId: z.ZodString;
-    title: z.ZodString;
-    description: z.ZodOptional<z.ZodString>;
-    type: z.ZodString;
-    startDateTime: z.ZodDate;
-    endDateTime: z.ZodDate;
-    locationType: z.ZodDefault<z.ZodNativeEnum<any>>;
-    location: z.ZodOptional<z.ZodString>;
-    locationAddress: z.ZodOptional<z.ZodString>;
-    locationCity: z.ZodOptional<z.ZodString>;
-    locationState: z.ZodOptional<z.ZodString>;
-    locationCountry: z.ZodOptional<z.ZodString>;
-    locationPostalCode: z.ZodOptional<z.ZodString>;
-    locationLatitude: z.ZodOptional<z.ZodNumber>;
-    locationLongitude: z.ZodOptional<z.ZodNumber>;
-    locationNotes: z.ZodOptional<z.ZodString>;
-    travelTime: z.ZodOptional<z.ZodNumber>;
-    travelDistance: z.ZodOptional<z.ZodNumber>;
-    weatherRequired: z.ZodDefault<z.ZodBoolean>;
-    preferredWeather: z.ZodOptional<z.ZodArray<z.ZodNativeEnum<any>, "many">>;
-    weatherBackupPlan: z.ZodOptional<z.ZodString>;
-    totalAmount: z.ZodNumber;
-    depositAmount: z.ZodDefault<z.ZodNumber>;
-    discountAmount: z.ZodDefault<z.ZodNumber>;
-    currency: z.ZodNativeEnum<any>;
-    isRecurring: z.ZodDefault<z.ZodBoolean>;
-    recurringPattern: z.ZodOptional<z.ZodObject<{
-        frequency: z.ZodEnum<["daily", "weekly", "monthly", "yearly"]>;
-        interval: z.ZodNumber;
-        endDate: z.ZodOptional<z.ZodDate>;
-        daysOfWeek: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-    }, "strip", z.ZodTypeAny, {
-        frequency: "daily" | "weekly" | "monthly" | "yearly";
-        interval: number;
-        endDate?: Date | undefined;
-        daysOfWeek?: number[] | undefined;
-    }, {
-        frequency: "daily" | "weekly" | "monthly" | "yearly";
-        interval: number;
-        endDate?: Date | undefined;
-        daysOfWeek?: number[] | undefined;
-    }>>;
-    bufferTimeBefore: z.ZodDefault<z.ZodNumber>;
-    bufferTimeAfter: z.ZodDefault<z.ZodNumber>;
-    assignments: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        userId: z.ZodString;
-        role: z.ZodString;
-        isPrimary: z.ZodDefault<z.ZodBoolean>;
-        rate: z.ZodOptional<z.ZodNumber>;
-    }, "strip", z.ZodTypeAny, {
-        userId: string;
-        role: string;
-        isPrimary: boolean;
-        rate?: number | undefined;
-    }, {
-        userId: string;
-        role: string;
-        isPrimary?: boolean | undefined;
-        rate?: number | undefined;
-    }>, "many">>;
-    equipmentIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-    roomIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-    internalNotes: z.ZodOptional<z.ZodString>;
-    customFields: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
-}, "strip", z.ZodTypeAny, {
+  }
+>;
+export declare const createBookingSchema: z.ZodEffects<
+  z.ZodObject<
+    {
+      clientId: z.ZodString;
+      title: z.ZodString;
+      description: z.ZodOptional<z.ZodString>;
+      type: z.ZodString;
+      startDateTime: z.ZodDate;
+      endDateTime: z.ZodDate;
+      locationType: z.ZodDefault<z.ZodNativeEnum<any>>;
+      location: z.ZodOptional<z.ZodString>;
+      locationAddress: z.ZodOptional<z.ZodString>;
+      locationCity: z.ZodOptional<z.ZodString>;
+      locationState: z.ZodOptional<z.ZodString>;
+      locationCountry: z.ZodOptional<z.ZodString>;
+      locationPostalCode: z.ZodOptional<z.ZodString>;
+      locationLatitude: z.ZodOptional<z.ZodNumber>;
+      locationLongitude: z.ZodOptional<z.ZodNumber>;
+      locationNotes: z.ZodOptional<z.ZodString>;
+      travelTime: z.ZodOptional<z.ZodNumber>;
+      travelDistance: z.ZodOptional<z.ZodNumber>;
+      weatherRequired: z.ZodDefault<z.ZodBoolean>;
+      preferredWeather: z.ZodOptional<z.ZodArray<z.ZodNativeEnum<any>, "many">>;
+      weatherBackupPlan: z.ZodOptional<z.ZodString>;
+      totalAmount: z.ZodNumber;
+      depositAmount: z.ZodDefault<z.ZodNumber>;
+      discountAmount: z.ZodDefault<z.ZodNumber>;
+      currency: z.ZodNativeEnum<any>;
+      isRecurring: z.ZodDefault<z.ZodBoolean>;
+      recurringPattern: z.ZodOptional<
+        z.ZodObject<
+          {
+            frequency: z.ZodEnum<["daily", "weekly", "monthly", "yearly"]>;
+            interval: z.ZodNumber;
+            endDate: z.ZodOptional<z.ZodDate>;
+            daysOfWeek: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+          },
+          "strip",
+          z.ZodTypeAny,
+          {
+            frequency: "daily" | "weekly" | "monthly" | "yearly";
+            interval: number;
+            endDate?: Date | undefined;
+            daysOfWeek?: number[] | undefined;
+          },
+          {
+            frequency: "daily" | "weekly" | "monthly" | "yearly";
+            interval: number;
+            endDate?: Date | undefined;
+            daysOfWeek?: number[] | undefined;
+          }
+        >
+      >;
+      bufferTimeBefore: z.ZodDefault<z.ZodNumber>;
+      bufferTimeAfter: z.ZodDefault<z.ZodNumber>;
+      assignments: z.ZodOptional<
+        z.ZodArray<
+          z.ZodObject<
+            {
+              userId: z.ZodString;
+              role: z.ZodString;
+              isPrimary: z.ZodDefault<z.ZodBoolean>;
+              rate: z.ZodOptional<z.ZodNumber>;
+            },
+            "strip",
+            z.ZodTypeAny,
+            {
+              userId: string;
+              role: string;
+              isPrimary: boolean;
+              rate?: number | undefined;
+            },
+            {
+              userId: string;
+              role: string;
+              isPrimary?: boolean | undefined;
+              rate?: number | undefined;
+            }
+          >,
+          "many"
+        >
+      >;
+      equipmentIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+      roomIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+      internalNotes: z.ZodOptional<z.ZodString>;
+      customFields: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    },
+    "strip",
+    z.ZodTypeAny,
+    {
+      [x: string]: any;
+      clientId?: unknown;
+      title?: unknown;
+      description?: unknown;
+      type?: unknown;
+      startDateTime?: unknown;
+      endDateTime?: unknown;
+      locationType?: unknown;
+      location?: unknown;
+      locationAddress?: unknown;
+      locationCity?: unknown;
+      locationState?: unknown;
+      locationCountry?: unknown;
+      locationPostalCode?: unknown;
+      locationLatitude?: unknown;
+      locationLongitude?: unknown;
+      locationNotes?: unknown;
+      travelTime?: unknown;
+      travelDistance?: unknown;
+      weatherRequired?: unknown;
+      preferredWeather?: unknown;
+      weatherBackupPlan?: unknown;
+      totalAmount?: unknown;
+      depositAmount?: unknown;
+      discountAmount?: unknown;
+      currency?: unknown;
+      isRecurring?: unknown;
+      recurringPattern?: unknown;
+      bufferTimeBefore?: unknown;
+      bufferTimeAfter?: unknown;
+      assignments?: unknown;
+      equipmentIds?: unknown;
+      roomIds?: unknown;
+      internalNotes?: unknown;
+      customFields?: unknown;
+    },
+    {
+      [x: string]: any;
+      clientId?: unknown;
+      title?: unknown;
+      description?: unknown;
+      type?: unknown;
+      startDateTime?: unknown;
+      endDateTime?: unknown;
+      locationType?: unknown;
+      location?: unknown;
+      locationAddress?: unknown;
+      locationCity?: unknown;
+      locationState?: unknown;
+      locationCountry?: unknown;
+      locationPostalCode?: unknown;
+      locationLatitude?: unknown;
+      locationLongitude?: unknown;
+      locationNotes?: unknown;
+      travelTime?: unknown;
+      travelDistance?: unknown;
+      weatherRequired?: unknown;
+      preferredWeather?: unknown;
+      weatherBackupPlan?: unknown;
+      totalAmount?: unknown;
+      depositAmount?: unknown;
+      discountAmount?: unknown;
+      currency?: unknown;
+      isRecurring?: unknown;
+      recurringPattern?: unknown;
+      bufferTimeBefore?: unknown;
+      bufferTimeAfter?: unknown;
+      assignments?: unknown;
+      equipmentIds?: unknown;
+      roomIds?: unknown;
+      internalNotes?: unknown;
+      customFields?: unknown;
+    }
+  >,
+  {
     [x: string]: any;
     clientId?: unknown;
     title?: unknown;
@@ -504,7 +704,8 @@ export declare const createBookingSchema: z.ZodEffects<z.ZodObject<{
     roomIds?: unknown;
     internalNotes?: unknown;
     customFields?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     clientId?: unknown;
     title?: unknown;
@@ -540,81 +741,11 @@ export declare const createBookingSchema: z.ZodEffects<z.ZodObject<{
     roomIds?: unknown;
     internalNotes?: unknown;
     customFields?: unknown;
-}>, {
-    [x: string]: any;
-    clientId?: unknown;
-    title?: unknown;
-    description?: unknown;
-    type?: unknown;
-    startDateTime?: unknown;
-    endDateTime?: unknown;
-    locationType?: unknown;
-    location?: unknown;
-    locationAddress?: unknown;
-    locationCity?: unknown;
-    locationState?: unknown;
-    locationCountry?: unknown;
-    locationPostalCode?: unknown;
-    locationLatitude?: unknown;
-    locationLongitude?: unknown;
-    locationNotes?: unknown;
-    travelTime?: unknown;
-    travelDistance?: unknown;
-    weatherRequired?: unknown;
-    preferredWeather?: unknown;
-    weatherBackupPlan?: unknown;
-    totalAmount?: unknown;
-    depositAmount?: unknown;
-    discountAmount?: unknown;
-    currency?: unknown;
-    isRecurring?: unknown;
-    recurringPattern?: unknown;
-    bufferTimeBefore?: unknown;
-    bufferTimeAfter?: unknown;
-    assignments?: unknown;
-    equipmentIds?: unknown;
-    roomIds?: unknown;
-    internalNotes?: unknown;
-    customFields?: unknown;
-}, {
-    [x: string]: any;
-    clientId?: unknown;
-    title?: unknown;
-    description?: unknown;
-    type?: unknown;
-    startDateTime?: unknown;
-    endDateTime?: unknown;
-    locationType?: unknown;
-    location?: unknown;
-    locationAddress?: unknown;
-    locationCity?: unknown;
-    locationState?: unknown;
-    locationCountry?: unknown;
-    locationPostalCode?: unknown;
-    locationLatitude?: unknown;
-    locationLongitude?: unknown;
-    locationNotes?: unknown;
-    travelTime?: unknown;
-    travelDistance?: unknown;
-    weatherRequired?: unknown;
-    preferredWeather?: unknown;
-    weatherBackupPlan?: unknown;
-    totalAmount?: unknown;
-    depositAmount?: unknown;
-    discountAmount?: unknown;
-    currency?: unknown;
-    isRecurring?: unknown;
-    recurringPattern?: unknown;
-    bufferTimeBefore?: unknown;
-    bufferTimeAfter?: unknown;
-    assignments?: unknown;
-    equipmentIds?: unknown;
-    roomIds?: unknown;
-    internalNotes?: unknown;
-    customFields?: unknown;
-}>;
+  }
+>;
 export declare const updateBookingSchema: any;
-export declare const createEquipmentSchema: z.ZodObject<{
+export declare const createEquipmentSchema: z.ZodObject<
+  {
     name: z.ZodString;
     brand: z.ZodOptional<z.ZodString>;
     model: z.ZodOptional<z.ZodString>;
@@ -637,7 +768,10 @@ export declare const createEquipmentSchema: z.ZodObject<{
     isRentable: z.ZodDefault<z.ZodBoolean>;
     rentalPricePerDay: z.ZodOptional<z.ZodNumber>;
     rentalDeposit: z.ZodOptional<z.ZodNumber>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     brand?: unknown;
@@ -661,7 +795,8 @@ export declare const createEquipmentSchema: z.ZodObject<{
     isRentable?: unknown;
     rentalPricePerDay?: unknown;
     rentalDeposit?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     brand?: unknown;
@@ -685,8 +820,10 @@ export declare const createEquipmentSchema: z.ZodObject<{
     isRentable?: unknown;
     rentalPricePerDay?: unknown;
     rentalDeposit?: unknown;
-}>;
-export declare const updateEquipmentSchema: z.ZodObject<{
+  }
+>;
+export declare const updateEquipmentSchema: z.ZodObject<
+  {
     name: z.ZodOptional<z.ZodString>;
     brand: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     model: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -699,9 +836,13 @@ export declare const updateEquipmentSchema: z.ZodObject<{
     currency: z.ZodOptional<z.ZodNativeEnum<any>>;
     supplier: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     status: z.ZodOptional<z.ZodDefault<z.ZodNativeEnum<any>>>;
-    condition: z.ZodOptional<z.ZodDefault<z.ZodEnum<["Excellent", "Good", "Fair", "Poor"]>>>;
+    condition: z.ZodOptional<
+      z.ZodDefault<z.ZodEnum<["Excellent", "Good", "Fair", "Poor"]>>
+    >;
     defaultLocation: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    specifications: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>>;
+    specifications: z.ZodOptional<
+      z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>
+    >;
     accessories: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
@@ -709,7 +850,10 @@ export declare const updateEquipmentSchema: z.ZodObject<{
     isRentable: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     rentalPricePerDay: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     rentalDeposit: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     brand?: unknown;
@@ -733,7 +877,8 @@ export declare const updateEquipmentSchema: z.ZodObject<{
     isRentable?: unknown;
     rentalPricePerDay?: unknown;
     rentalDeposit?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     brand?: unknown;
@@ -757,8 +902,10 @@ export declare const updateEquipmentSchema: z.ZodObject<{
     isRentable?: unknown;
     rentalPricePerDay?: unknown;
     rentalDeposit?: unknown;
-}>;
-export declare const createRoomSchema: z.ZodObject<{
+  }
+>;
+export declare const createRoomSchema: z.ZodObject<
+  {
     name: z.ZodString;
     description: z.ZodOptional<z.ZodString>;
     capacity: z.ZodNumber;
@@ -777,7 +924,10 @@ export declare const createRoomSchema: z.ZodObject<{
     accessInstructions: z.ZodOptional<z.ZodString>;
     rules: z.ZodOptional<z.ZodString>;
     images: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     description?: unknown;
@@ -797,7 +947,8 @@ export declare const createRoomSchema: z.ZodObject<{
     accessInstructions?: unknown;
     rules?: unknown;
     images?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     description?: unknown;
@@ -817,8 +968,10 @@ export declare const createRoomSchema: z.ZodObject<{
     accessInstructions?: unknown;
     rules?: unknown;
     images?: unknown;
-}>;
-export declare const updateRoomSchema: z.ZodObject<{
+  }
+>;
+export declare const updateRoomSchema: z.ZodObject<
+  {
     name: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     capacity: z.ZodOptional<z.ZodNumber>;
@@ -828,7 +981,9 @@ export declare const updateRoomSchema: z.ZodObject<{
     currency: z.ZodOptional<z.ZodNativeEnum<any>>;
     area: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-    permanentEquipment: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    permanentEquipment: z.ZodOptional<
+      z.ZodOptional<z.ZodArray<z.ZodString, "many">>
+    >;
     minimumBookingHours: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     hasNaturalLight: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     hasBlackoutOption: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
@@ -837,7 +992,10 @@ export declare const updateRoomSchema: z.ZodObject<{
     accessInstructions: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     images: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     name?: unknown;
     description?: unknown;
@@ -857,7 +1015,8 @@ export declare const updateRoomSchema: z.ZodObject<{
     accessInstructions?: unknown;
     rules?: unknown;
     images?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     name?: unknown;
     description?: unknown;
@@ -877,8 +1036,10 @@ export declare const updateRoomSchema: z.ZodObject<{
     accessInstructions?: unknown;
     rules?: unknown;
     images?: unknown;
-}>;
-export declare const createProjectSchema: z.ZodObject<{
+  }
+>;
+export declare const createProjectSchema: z.ZodObject<
+  {
     clientId: z.ZodString;
     bookingId: z.ZodOptional<z.ZodString>;
     name: z.ZodString;
@@ -889,33 +1050,49 @@ export declare const createProjectSchema: z.ZodObject<{
     deliveryDeadline: z.ZodOptional<z.ZodDate>;
     deliveryMethod: z.ZodOptional<z.ZodString>;
     deliveryNotes: z.ZodOptional<z.ZodString>;
-    assignments: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        userId: z.ZodString;
-        role: z.ZodString;
-        estimatedHours: z.ZodOptional<z.ZodNumber>;
-    }, "strip", z.ZodTypeAny, {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }, {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }>, "many">>;
+    assignments: z.ZodOptional<
+      z.ZodArray<
+        z.ZodObject<
+          {
+            userId: z.ZodString;
+            role: z.ZodString;
+            estimatedHours: z.ZodOptional<z.ZodNumber>;
+          },
+          "strip",
+          z.ZodTypeAny,
+          {
+            userId: string;
+            role: string;
+            estimatedHours?: number | undefined;
+          },
+          {
+            userId: string;
+            role: string;
+            estimatedHours?: number | undefined;
+          }
+        >,
+        "many"
+      >
+    >;
     editorId: z.ZodOptional<z.ZodString>;
     internalNotes: z.ZodOptional<z.ZodString>;
     clientNotes: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     customFields: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     type: string;
     name: string;
     clientId: string;
-    assignments?: {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }[] | undefined;
+    assignments?:
+      | {
+          userId: string;
+          role: string;
+          estimatedHours?: number | undefined;
+        }[]
+      | undefined;
     tags?: string[] | undefined;
     description?: string | undefined;
     deliveryMethod?: string | undefined;
@@ -928,15 +1105,18 @@ export declare const createProjectSchema: z.ZodObject<{
     deliveryNotes?: string | undefined;
     editorId?: string | undefined;
     clientNotes?: string | undefined;
-}, {
+  },
+  {
     type: string;
     name: string;
     clientId: string;
-    assignments?: {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }[] | undefined;
+    assignments?:
+      | {
+          userId: string;
+          role: string;
+          estimatedHours?: number | undefined;
+        }[]
+      | undefined;
     tags?: string[] | undefined;
     description?: string | undefined;
     deliveryMethod?: string | undefined;
@@ -949,8 +1129,10 @@ export declare const createProjectSchema: z.ZodObject<{
     deliveryNotes?: string | undefined;
     editorId?: string | undefined;
     clientNotes?: string | undefined;
-}>;
-export declare const updateProjectSchema: z.ZodObject<{
+  }
+>;
+export declare const updateProjectSchema: z.ZodObject<
+  {
     clientId: z.ZodOptional<z.ZodString>;
     bookingId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     name: z.ZodOptional<z.ZodString>;
@@ -961,27 +1143,45 @@ export declare const updateProjectSchema: z.ZodObject<{
     deliveryDeadline: z.ZodOptional<z.ZodOptional<z.ZodDate>>;
     deliveryMethod: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     deliveryNotes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    assignments: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
-        userId: z.ZodString;
-        role: z.ZodString;
-        estimatedHours: z.ZodOptional<z.ZodNumber>;
-    }, "strip", z.ZodTypeAny, {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }, {
-        userId: string;
-        role: string;
-        estimatedHours?: number | undefined;
-    }>, "many">>>;
+    assignments: z.ZodOptional<
+      z.ZodOptional<
+        z.ZodArray<
+          z.ZodObject<
+            {
+              userId: z.ZodString;
+              role: z.ZodString;
+              estimatedHours: z.ZodOptional<z.ZodNumber>;
+            },
+            "strip",
+            z.ZodTypeAny,
+            {
+              userId: string;
+              role: string;
+              estimatedHours?: number | undefined;
+            },
+            {
+              userId: string;
+              role: string;
+              estimatedHours?: number | undefined;
+            }
+          >,
+          "many"
+        >
+      >
+    >;
     editorId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     internalNotes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     clientNotes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-    customFields: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>>;
-} & {
+    customFields: z.ZodOptional<
+      z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>
+    >;
+  } & {
     status: z.ZodOptional<z.ZodNativeEnum<any>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1000,7 +1200,8 @@ export declare const updateProjectSchema: z.ZodObject<{
     tags?: unknown;
     customFields?: unknown;
     status?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1019,31 +1220,42 @@ export declare const updateProjectSchema: z.ZodObject<{
     tags?: unknown;
     customFields?: unknown;
     status?: unknown;
-}>;
-export declare const createInvoiceSchema: z.ZodObject<{
+  }
+>;
+export declare const createInvoiceSchema: z.ZodObject<
+  {
     clientId: z.ZodString;
     bookingId: z.ZodOptional<z.ZodString>;
     issueDate: z.ZodDefault<z.ZodDate>;
     dueDate: z.ZodDate;
-    lineItems: z.ZodArray<z.ZodObject<{
-        description: z.ZodString;
-        quantity: z.ZodNumber;
-        unitPrice: z.ZodNumber;
-        taxable: z.ZodDefault<z.ZodBoolean>;
-        category: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        description: string;
-        quantity: number;
-        unitPrice: number;
-        taxable: boolean;
-        category?: string | undefined;
-    }, {
-        description: string;
-        quantity: number;
-        unitPrice: number;
-        category?: string | undefined;
-        taxable?: boolean | undefined;
-    }>, "many">;
+    lineItems: z.ZodArray<
+      z.ZodObject<
+        {
+          description: z.ZodString;
+          quantity: z.ZodNumber;
+          unitPrice: z.ZodNumber;
+          taxable: z.ZodDefault<z.ZodBoolean>;
+          category: z.ZodOptional<z.ZodString>;
+        },
+        "strip",
+        z.ZodTypeAny,
+        {
+          description: string;
+          quantity: number;
+          unitPrice: number;
+          taxable: boolean;
+          category?: string | undefined;
+        },
+        {
+          description: string;
+          quantity: number;
+          unitPrice: number;
+          category?: string | undefined;
+          taxable?: boolean | undefined;
+        }
+      >,
+      "many"
+    >;
     discountPercentage: z.ZodDefault<z.ZodNumber>;
     discountAmount: z.ZodDefault<z.ZodNumber>;
     taxRate: z.ZodDefault<z.ZodNumber>;
@@ -1051,7 +1263,10 @@ export declare const createInvoiceSchema: z.ZodObject<{
     paymentTerms: z.ZodOptional<z.ZodString>;
     notes: z.ZodOptional<z.ZodString>;
     customFields: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1065,7 +1280,8 @@ export declare const createInvoiceSchema: z.ZodObject<{
     paymentTerms?: unknown;
     notes?: unknown;
     customFields?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1079,41 +1295,59 @@ export declare const createInvoiceSchema: z.ZodObject<{
     paymentTerms?: unknown;
     notes?: unknown;
     customFields?: unknown;
-}>;
-export declare const updateInvoiceSchema: z.ZodObject<{
+  }
+>;
+export declare const updateInvoiceSchema: z.ZodObject<
+  {
     clientId: z.ZodOptional<z.ZodString>;
     bookingId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     issueDate: z.ZodOptional<z.ZodDefault<z.ZodDate>>;
     dueDate: z.ZodOptional<z.ZodDate>;
-    lineItems: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        description: z.ZodString;
-        quantity: z.ZodNumber;
-        unitPrice: z.ZodNumber;
-        taxable: z.ZodDefault<z.ZodBoolean>;
-        category: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        description: string;
-        quantity: number;
-        unitPrice: number;
-        taxable: boolean;
-        category?: string | undefined;
-    }, {
-        description: string;
-        quantity: number;
-        unitPrice: number;
-        category?: string | undefined;
-        taxable?: boolean | undefined;
-    }>, "many">>;
+    lineItems: z.ZodOptional<
+      z.ZodArray<
+        z.ZodObject<
+          {
+            description: z.ZodString;
+            quantity: z.ZodNumber;
+            unitPrice: z.ZodNumber;
+            taxable: z.ZodDefault<z.ZodBoolean>;
+            category: z.ZodOptional<z.ZodString>;
+          },
+          "strip",
+          z.ZodTypeAny,
+          {
+            description: string;
+            quantity: number;
+            unitPrice: number;
+            taxable: boolean;
+            category?: string | undefined;
+          },
+          {
+            description: string;
+            quantity: number;
+            unitPrice: number;
+            category?: string | undefined;
+            taxable?: boolean | undefined;
+          }
+        >,
+        "many"
+      >
+    >;
     discountPercentage: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     discountAmount: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     taxRate: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     currency: z.ZodOptional<z.ZodNativeEnum<any>>;
     paymentTerms: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    customFields: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>>;
-} & {
+    customFields: z.ZodOptional<
+      z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>
+    >;
+  } & {
     status: z.ZodOptional<z.ZodNativeEnum<any>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1128,7 +1362,8 @@ export declare const updateInvoiceSchema: z.ZodObject<{
     notes?: unknown;
     customFields?: unknown;
     status?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     clientId?: unknown;
     bookingId?: unknown;
@@ -1143,8 +1378,10 @@ export declare const updateInvoiceSchema: z.ZodObject<{
     notes?: unknown;
     customFields?: unknown;
     status?: unknown;
-}>;
-export declare const createPaymentSchema: z.ZodObject<{
+  }
+>;
+export declare const createPaymentSchema: z.ZodObject<
+  {
     clientId: z.ZodString;
     invoiceId: z.ZodOptional<z.ZodString>;
     bookingId: z.ZodOptional<z.ZodString>;
@@ -1153,7 +1390,10 @@ export declare const createPaymentSchema: z.ZodObject<{
     gateway: z.ZodNativeEnum<any>;
     description: z.ZodOptional<z.ZodString>;
     metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     clientId?: unknown;
     invoiceId?: unknown;
@@ -1163,7 +1403,8 @@ export declare const createPaymentSchema: z.ZodObject<{
     gateway?: unknown;
     description?: unknown;
     metadata?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     clientId?: unknown;
     invoiceId?: unknown;
@@ -1173,73 +1414,108 @@ export declare const createPaymentSchema: z.ZodObject<{
     gateway?: unknown;
     description?: unknown;
     metadata?: unknown;
-}>;
-export declare const processPaymentSchema: z.ZodObject<{
+  }
+>;
+export declare const processPaymentSchema: z.ZodObject<
+  {
     paymentMethodId: z.ZodString;
     saveCard: z.ZodDefault<z.ZodBoolean>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     paymentMethodId: string;
     saveCard: boolean;
-}, {
+  },
+  {
     paymentMethodId: string;
     saveCard?: boolean | undefined;
-}>;
-export declare const uploadFileSchema: z.ZodObject<{
+  }
+>;
+export declare const uploadFileSchema: z.ZodObject<
+  {
     projectId: z.ZodString;
     clientId: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     notes: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     projectId: string;
     tags?: string[] | undefined;
     notes?: string | undefined;
     clientId?: string | undefined;
-}, {
+  },
+  {
     projectId: string;
     tags?: string[] | undefined;
     notes?: string | undefined;
     clientId?: string | undefined;
-}>;
-export declare const sendEmailSchema: z.ZodObject<{
+  }
+>;
+export declare const sendEmailSchema: z.ZodObject<
+  {
     to: z.ZodArray<z.ZodString, "many">;
     subject: z.ZodString;
     htmlContent: z.ZodString;
     textContent: z.ZodOptional<z.ZodString>;
-    attachments: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        filename: z.ZodString;
-        content: z.ZodString;
-        contentType: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        contentType: string;
-        filename: string;
-        content: string;
-    }, {
-        contentType: string;
-        filename: string;
-        content: string;
-    }>, "many">>;
-}, "strip", z.ZodTypeAny, {
+    attachments: z.ZodOptional<
+      z.ZodArray<
+        z.ZodObject<
+          {
+            filename: z.ZodString;
+            content: z.ZodString;
+            contentType: z.ZodString;
+          },
+          "strip",
+          z.ZodTypeAny,
+          {
+            contentType: string;
+            filename: string;
+            content: string;
+          },
+          {
+            contentType: string;
+            filename: string;
+            content: string;
+          }
+        >,
+        "many"
+      >
+    >;
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     subject: string;
     htmlContent: string;
     to: string[];
     textContent?: string | undefined;
-    attachments?: {
-        contentType: string;
-        filename: string;
-        content: string;
-    }[] | undefined;
-}, {
+    attachments?:
+      | {
+          contentType: string;
+          filename: string;
+          content: string;
+        }[]
+      | undefined;
+  },
+  {
     subject: string;
     htmlContent: string;
     to: string[];
     textContent?: string | undefined;
-    attachments?: {
-        contentType: string;
-        filename: string;
-        content: string;
-    }[] | undefined;
-}>;
-export declare const createEmailCampaignSchema: z.ZodObject<{
+    attachments?:
+      | {
+          contentType: string;
+          filename: string;
+          content: string;
+        }[]
+      | undefined;
+  }
+>;
+export declare const createEmailCampaignSchema: z.ZodObject<
+  {
     name: z.ZodString;
     subject: z.ZodString;
     fromName: z.ZodString;
@@ -1247,38 +1523,49 @@ export declare const createEmailCampaignSchema: z.ZodObject<{
     replyTo: z.ZodOptional<z.ZodString>;
     htmlContent: z.ZodString;
     textContent: z.ZodOptional<z.ZodString>;
-    audienceFilter: z.ZodOptional<z.ZodObject<{
-        tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        minBookings: z.ZodOptional<z.ZodNumber>;
-        maxBookings: z.ZodOptional<z.ZodNumber>;
-        minSpent: z.ZodOptional<z.ZodNumber>;
-        maxSpent: z.ZodOptional<z.ZodNumber>;
-        hasMarketingConsent: z.ZodOptional<z.ZodBoolean>;
-        lastBookingBefore: z.ZodOptional<z.ZodDate>;
-        lastBookingAfter: z.ZodOptional<z.ZodDate>;
-    }, "strip", z.ZodTypeAny, {
-        tags?: string[] | undefined;
-        minBookings?: number | undefined;
-        maxBookings?: number | undefined;
-        minSpent?: number | undefined;
-        maxSpent?: number | undefined;
-        lastBookingAfter?: Date | undefined;
-        lastBookingBefore?: Date | undefined;
-        hasMarketingConsent?: boolean | undefined;
-    }, {
-        tags?: string[] | undefined;
-        minBookings?: number | undefined;
-        maxBookings?: number | undefined;
-        minSpent?: number | undefined;
-        maxSpent?: number | undefined;
-        lastBookingAfter?: Date | undefined;
-        lastBookingBefore?: Date | undefined;
-        hasMarketingConsent?: boolean | undefined;
-    }>>;
+    audienceFilter: z.ZodOptional<
+      z.ZodObject<
+        {
+          tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+          minBookings: z.ZodOptional<z.ZodNumber>;
+          maxBookings: z.ZodOptional<z.ZodNumber>;
+          minSpent: z.ZodOptional<z.ZodNumber>;
+          maxSpent: z.ZodOptional<z.ZodNumber>;
+          hasMarketingConsent: z.ZodOptional<z.ZodBoolean>;
+          lastBookingBefore: z.ZodOptional<z.ZodDate>;
+          lastBookingAfter: z.ZodOptional<z.ZodDate>;
+        },
+        "strip",
+        z.ZodTypeAny,
+        {
+          tags?: string[] | undefined;
+          minBookings?: number | undefined;
+          maxBookings?: number | undefined;
+          minSpent?: number | undefined;
+          maxSpent?: number | undefined;
+          lastBookingAfter?: Date | undefined;
+          lastBookingBefore?: Date | undefined;
+          hasMarketingConsent?: boolean | undefined;
+        },
+        {
+          tags?: string[] | undefined;
+          minBookings?: number | undefined;
+          maxBookings?: number | undefined;
+          minSpent?: number | undefined;
+          maxSpent?: number | undefined;
+          lastBookingAfter?: Date | undefined;
+          lastBookingBefore?: Date | undefined;
+          hasMarketingConsent?: boolean | undefined;
+        }
+      >
+    >;
     testEmails: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     scheduledFor: z.ZodOptional<z.ZodDate>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     name: string;
     subject: string;
     fromName: string;
@@ -1286,20 +1573,23 @@ export declare const createEmailCampaignSchema: z.ZodObject<{
     htmlContent: string;
     replyTo?: string | undefined;
     textContent?: string | undefined;
-    audienceFilter?: {
-        tags?: string[] | undefined;
-        minBookings?: number | undefined;
-        maxBookings?: number | undefined;
-        minSpent?: number | undefined;
-        maxSpent?: number | undefined;
-        lastBookingAfter?: Date | undefined;
-        lastBookingBefore?: Date | undefined;
-        hasMarketingConsent?: boolean | undefined;
-    } | undefined;
+    audienceFilter?:
+      | {
+          tags?: string[] | undefined;
+          minBookings?: number | undefined;
+          maxBookings?: number | undefined;
+          minSpent?: number | undefined;
+          maxSpent?: number | undefined;
+          lastBookingAfter?: Date | undefined;
+          lastBookingBefore?: Date | undefined;
+          hasMarketingConsent?: boolean | undefined;
+        }
+      | undefined;
     testEmails?: string[] | undefined;
     scheduledFor?: Date | undefined;
     tags?: string[] | undefined;
-}, {
+  },
+  {
     name: string;
     subject: string;
     fromName: string;
@@ -1307,21 +1597,25 @@ export declare const createEmailCampaignSchema: z.ZodObject<{
     htmlContent: string;
     replyTo?: string | undefined;
     textContent?: string | undefined;
-    audienceFilter?: {
-        tags?: string[] | undefined;
-        minBookings?: number | undefined;
-        maxBookings?: number | undefined;
-        minSpent?: number | undefined;
-        maxSpent?: number | undefined;
-        lastBookingAfter?: Date | undefined;
-        lastBookingBefore?: Date | undefined;
-        hasMarketingConsent?: boolean | undefined;
-    } | undefined;
+    audienceFilter?:
+      | {
+          tags?: string[] | undefined;
+          minBookings?: number | undefined;
+          maxBookings?: number | undefined;
+          minSpent?: number | undefined;
+          maxSpent?: number | undefined;
+          lastBookingAfter?: Date | undefined;
+          lastBookingBefore?: Date | undefined;
+          hasMarketingConsent?: boolean | undefined;
+        }
+      | undefined;
     testEmails?: string[] | undefined;
     scheduledFor?: Date | undefined;
     tags?: string[] | undefined;
-}>;
-export declare const createExpenseSchema: z.ZodObject<{
+  }
+>;
+export declare const createExpenseSchema: z.ZodObject<
+  {
     category: z.ZodNativeEnum<any>;
     description: z.ZodString;
     amount: z.ZodNumber;
@@ -1332,7 +1626,10 @@ export declare const createExpenseSchema: z.ZodObject<{
     isReimbursable: z.ZodDefault<z.ZodBoolean>;
     notes: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     category?: unknown;
     description?: unknown;
@@ -1344,7 +1641,8 @@ export declare const createExpenseSchema: z.ZodObject<{
     isReimbursable?: unknown;
     notes?: unknown;
     tags?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     category?: unknown;
     description?: unknown;
@@ -1356,8 +1654,10 @@ export declare const createExpenseSchema: z.ZodObject<{
     isReimbursable?: unknown;
     notes?: unknown;
     tags?: unknown;
-}>;
-export declare const updateExpenseSchema: z.ZodObject<{
+  }
+>;
+export declare const updateExpenseSchema: z.ZodObject<
+  {
     category: z.ZodOptional<z.ZodNativeEnum<any>>;
     description: z.ZodOptional<z.ZodString>;
     amount: z.ZodOptional<z.ZodNumber>;
@@ -1368,7 +1668,10 @@ export declare const updateExpenseSchema: z.ZodObject<{
     isReimbursable: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     [x: string]: any;
     category?: unknown;
     description?: unknown;
@@ -1380,7 +1683,8 @@ export declare const updateExpenseSchema: z.ZodObject<{
     isReimbursable?: unknown;
     notes?: unknown;
     tags?: unknown;
-}, {
+  },
+  {
     [x: string]: any;
     category?: unknown;
     description?: unknown;
@@ -1392,42 +1696,61 @@ export declare const updateExpenseSchema: z.ZodObject<{
     isReimbursable?: unknown;
     notes?: unknown;
     tags?: unknown;
-}>;
-export declare const updateSettingSchema: z.ZodObject<{
+  }
+>;
+export declare const updateSettingSchema: z.ZodObject<
+  {
     value: z.ZodAny;
     description: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     description?: string | undefined;
     value?: any;
-}, {
+  },
+  {
     description?: string | undefined;
     value?: any;
-}>;
-export declare const searchLocationsSchema: z.ZodObject<{
+  }
+>;
+export declare const searchLocationsSchema: z.ZodObject<
+  {
     query: z.ZodString;
     type: z.ZodOptional<z.ZodEnum<["country", "state", "city", "timezone"]>>;
     countryCode: z.ZodOptional<z.ZodString>;
     stateCode: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     query: string;
     type?: "city" | "state" | "country" | "timezone" | undefined;
     countryCode?: string | undefined;
     stateCode?: string | undefined;
-}, {
+  },
+  {
     query: string;
     type?: "city" | "state" | "country" | "timezone" | undefined;
     countryCode?: string | undefined;
     stateCode?: string | undefined;
-}>;
-export declare const reportFiltersSchema: z.ZodObject<{
+  }
+>;
+export declare const reportFiltersSchema: z.ZodObject<
+  {
     startDate: z.ZodDate;
     endDate: z.ZodDate;
-    groupBy: z.ZodOptional<z.ZodEnum<["day", "week", "month", "quarter", "year"]>>;
+    groupBy: z.ZodOptional<
+      z.ZodEnum<["day", "week", "month", "quarter", "year"]>
+    >;
     clientId: z.ZodOptional<z.ZodString>;
     photographerId: z.ZodOptional<z.ZodString>;
     projectType: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
+  },
+  "strip",
+  z.ZodTypeAny,
+  {
     startDate: Date;
     endDate: Date;
     status?: string | undefined;
@@ -1435,7 +1758,8 @@ export declare const reportFiltersSchema: z.ZodObject<{
     groupBy?: "year" | "week" | "day" | "month" | "quarter" | undefined;
     photographerId?: string | undefined;
     projectType?: string | undefined;
-}, {
+  },
+  {
     startDate: Date;
     endDate: Date;
     status?: string | undefined;
@@ -1443,4 +1767,5 @@ export declare const reportFiltersSchema: z.ZodObject<{
     groupBy?: "year" | "week" | "day" | "month" | "quarter" | undefined;
     photographerId?: string | undefined;
     projectType?: string | undefined;
-}>;
+  }
+>;

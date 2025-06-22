@@ -114,11 +114,7 @@ export class IntegrationService {
     const config = this.integrationConfigs.get('google')?.google;
     if (!config) throw new Error('Google integration not configured');
 
-    const oauth2Client = new OAuth2Client(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
-    );
+    const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, config.redirectUri);
 
     try {
       const { tokens } = await oauth2Client.getToken(authCode);
@@ -203,9 +199,10 @@ export class IntegrationService {
     const event: GoogleCalendarEvent = {
       summary: booking.title,
       description: `${booking.description || ''}\n\nClient: ${booking.client.firstName} ${booking.client.lastName}\nBooking #: ${booking.bookingNumber}`,
-      location: booking.locationType === 'STUDIO' 
-        ? booking.roomAssignments[0]?.room.name 
-        : booking.locationAddress || booking.location,
+      location:
+        booking.locationType === 'STUDIO'
+          ? booking.roomAssignments[0]?.room.name
+          : booking.locationAddress || booking.location,
       start: {
         dateTime: booking.startDateTime.toISOString(),
         timeZone: 'UTC',
@@ -219,7 +216,7 @@ export class IntegrationService {
           email: booking.client.email,
           displayName: `${booking.client.firstName} ${booking.client.lastName}`,
         },
-        ...booking.assignments.map(a => ({
+        ...booking.assignments.map((a) => ({
           email: a.user.email,
           displayName: `${a.user.firstName} ${a.user.lastName}`,
         })),
@@ -245,7 +242,7 @@ export class IntegrationService {
         where: { id: bookingId },
         data: {
           customFields: {
-            ...(booking.customFields as any || {}),
+            ...((booking.customFields as any) || {}),
             googleCalendarEventId: response.data.id,
           },
         },
@@ -280,15 +277,18 @@ export class IntegrationService {
         }
       );
 
-      const { access_token, refresh_token, x_refresh_token_expires_in, expires_in } = tokenResponse.data;
+      const { access_token, refresh_token, x_refresh_token_expires_in, expires_in } =
+        tokenResponse.data;
 
       // Encrypt tokens
-      const encryptedTokens = await this.cryptoService.encrypt(JSON.stringify({
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        expiresAt: dayjs().add(expires_in, 'seconds').toISOString(),
-        refreshExpiresAt: dayjs().add(x_refresh_token_expires_in, 'seconds').toISOString(),
-      }));
+      const encryptedTokens = await this.cryptoService.encrypt(
+        JSON.stringify({
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          expiresAt: dayjs().add(expires_in, 'seconds').toISOString(),
+          refreshExpiresAt: dayjs().add(x_refresh_token_expires_in, 'seconds').toISOString(),
+        })
+      );
 
       // Get company info
       const companyResponse = await axios.get(
@@ -363,7 +363,11 @@ export class IntegrationService {
     const accessToken = await this.getQuickBooksAccessToken(invoice.studioId);
 
     // Create or update customer
-    const customerId = await this.syncCustomerToQuickBooks(invoice.client, invoice.studioId, accessToken);
+    const customerId = await this.syncCustomerToQuickBooks(
+      invoice.client,
+      invoice.studioId,
+      accessToken
+    );
 
     // Create invoice in QuickBooks
     const qbInvoice = {
@@ -407,7 +411,7 @@ export class IntegrationService {
         where: { id: invoiceId },
         data: {
           customFields: {
-            ...(invoice.customFields as any || {}),
+            ...((invoice.customFields as any) || {}),
             quickbooksInvoiceId: response.data.Invoice.Id,
           },
         },
@@ -436,15 +440,19 @@ export class IntegrationService {
     const webhookUrl = (zapierConfig.value as any).webhookUrl;
 
     try {
-      await axios.post(webhookUrl, {
-        event,
-        timestamp: new Date().toISOString(),
-        data,
-      }, {
-        headers: {
-          'X-API-Key': (zapierConfig.value as any).apiKey,
+      await axios.post(
+        webhookUrl,
+        {
+          event,
+          timestamp: new Date().toISOString(),
+          data,
         },
-      });
+        {
+          headers: {
+            'X-API-Key': (zapierConfig.value as any).apiKey,
+          },
+        }
+      );
     } catch (error) {
       this.logger.error('Zapier webhook failed:', error);
     }
@@ -541,7 +549,7 @@ export class IntegrationService {
 
   private async getGoogleCalendarIntegration(userId: string) {
     const studioId = await this.getStudioIdFromUser(userId);
-    
+
     return this.db.systemSetting.findFirst({
       where: {
         studioId,
@@ -562,11 +570,7 @@ export class IntegrationService {
     const tokensJson = await this.cryptoService.decrypt(encryptedTokens);
     const tokens = JSON.parse(tokensJson);
 
-    const oauth2Client = new OAuth2Client(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
-    );
+    const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, config.redirectUri);
 
     oauth2Client.setCredentials(tokens);
 
@@ -636,7 +640,9 @@ export class IntegrationService {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
         expiresAt: dayjs().add(response.data.expires_in, 'seconds').toISOString(),
-        refreshExpiresAt: dayjs().add(response.data.x_refresh_token_expires_in, 'seconds').toISOString(),
+        refreshExpiresAt: dayjs()
+          .add(response.data.x_refresh_token_expires_in, 'seconds')
+          .toISOString(),
       };
 
       // Update stored tokens
@@ -691,16 +697,20 @@ export class IntegrationService {
       PrimaryEmailAddr: {
         Address: client.email,
       },
-      PrimaryPhone: client.phone ? {
-        FreeFormNumber: client.phone,
-      } : undefined,
+      PrimaryPhone: client.phone
+        ? {
+            FreeFormNumber: client.phone,
+          }
+        : undefined,
       CompanyName: client.company,
-      BillAddr: client.address ? {
-        Line1: client.address,
-        City: client.city,
-        CountrySubDivisionCode: client.state,
-        PostalCode: client.postalCode,
-      } : undefined,
+      BillAddr: client.address
+        ? {
+            Line1: client.address,
+            City: client.city,
+            CountrySubDivisionCode: client.state,
+            PostalCode: client.postalCode,
+          }
+        : undefined,
     };
 
     const createResponse = await axios.post(

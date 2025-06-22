@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Equipment routes - implementation in progress',
     endpoints: [
@@ -26,8 +26,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'PUT /api/v1/equipment/:id - Update equipment',
       'DELETE /api/v1/equipment/:id - Delete equipment',
       'POST /api/v1/equipment/:id/checkout - Checkout equipment',
-      'POST /api/v1/equipment/:id/checkin - Checkin equipment'
-    ]
+      'POST /api/v1/equipment/:id/checkin - Checkin equipment',
+    ],
   });
 });
 

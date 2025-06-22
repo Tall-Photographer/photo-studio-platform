@@ -32,7 +32,7 @@ export class EmailService {
   constructor() {
     this.fromEmail = process.env.FROM_EMAIL || 'noreply@shootlinks.com';
     this.fromName = process.env.FROM_NAME || 'Shootlinks Platform';
-    
+
     this.setupTransporter();
   }
 
@@ -120,11 +120,15 @@ export class EmailService {
     return html.replace(/<[^>]*>/g, '');
   }
 
-  public async sendVerificationEmail(email: string, firstName: string, token: string): Promise<void> {
+  public async sendVerificationEmail(
+    email: string,
+    firstName: string,
+    token: string
+  ): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-    
+
     const subject = 'Verify Your Email Address - Shootlinks';
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -173,11 +177,15 @@ export class EmailService {
     await this.sendEmail(email, subject, html);
   }
 
-  public async sendPasswordResetEmail(email: string, firstName: string, token: string): Promise<void> {
+  public async sendPasswordResetEmail(
+    email: string,
+    firstName: string,
+    token: string
+  ): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    
+
     const subject = 'Reset Your Password - Shootlinks';
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -237,7 +245,7 @@ export class EmailService {
     bookingDetails: BookingEmailDetails
   ): Promise<void> {
     const subject = `Booking Confirmation - ${bookingDetails.title}`;
-    
+
     const html = `
       <!DOCTYPE html>
       <html>

@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Payment routes - implementation in progress',
     endpoints: [
@@ -25,8 +25,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'POST /api/v1/payments - Create payment',
       'PUT /api/v1/payments/:id - Update payment',
       'POST /api/v1/payments/:id/refund - Refund payment',
-      'POST /api/v1/payments/stripe/webhook - Stripe webhook'
-    ]
+      'POST /api/v1/payments/stripe/webhook - Stripe webhook',
+    ],
   });
 });
 

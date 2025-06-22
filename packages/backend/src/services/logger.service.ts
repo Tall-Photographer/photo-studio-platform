@@ -54,7 +54,7 @@ export class LoggerService {
 
   private addFileTransports(): void {
     const logDir = process.env.LOG_DIR || 'logs';
-    
+
     // Error log file
     this.logger.add(
       new winston.transports.File({
@@ -62,10 +62,7 @@ export class LoggerService {
         level: 'error',
         maxsize: 5242880, // 5MB
         maxFiles: 5,
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json()
-        ),
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       })
     );
 
@@ -75,10 +72,7 @@ export class LoggerService {
         filename: path.join(logDir, 'combined.log'),
         maxsize: 5242880, // 5MB
         maxFiles: 5,
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json()
-        ),
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       })
     );
   }

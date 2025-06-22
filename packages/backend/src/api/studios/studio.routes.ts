@@ -16,15 +16,15 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Studio routes - implementation in progress',
     endpoints: [
       'GET /api/v1/studios - Get studio info',
       'PUT /api/v1/studios - Update studio',
       'GET /api/v1/studios/settings - Get settings',
-      'PUT /api/v1/studios/settings - Update settings'
-    ]
+      'PUT /api/v1/studios/settings - Update settings',
+    ],
   });
 });
 

@@ -6,7 +6,7 @@ const logger = LoggerService.getInstance();
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  
+
   // Log request
   logger.info(`${req.method} ${req.url}`, {
     ip: req.ip,

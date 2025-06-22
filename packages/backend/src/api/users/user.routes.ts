@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireManagerOrAdmin, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'User routes - implementation in progress',
     endpoints: [
@@ -24,8 +24,8 @@ router.get('/', requireManagerOrAdmin, (req: Request, res: Response) => {
       'GET /api/v1/users/:id - Get user',
       'POST /api/v1/users - Create user',
       'PUT /api/v1/users/:id - Update user',
-      'DELETE /api/v1/users/:id - Delete user'
-    ]
+      'DELETE /api/v1/users/:id - Delete user',
+    ],
   });
 });
 

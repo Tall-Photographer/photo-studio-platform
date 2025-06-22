@@ -1,11 +1,5 @@
 // packages/backend/src/services/emailMarketing.service.ts
-import {
-  EmailCampaign,
-  CampaignStatus,
-  Client,
-  Prisma,
-  CampaignRecipient,
-} from '@prisma/client';
+import { EmailCampaign, CampaignStatus, Client, Prisma, CampaignRecipient } from '@prisma/client';
 import { DatabaseService } from './database.service';
 import { EmailService } from './email.service';
 import { LoggerService } from './logger.service';
@@ -125,7 +119,7 @@ export class EmailMarketingService {
       return dayjs(date).format(format || 'MMM D, YYYY');
     });
 
-    Handlebars.registerHelper('if_eq', function(a: any, b: any, options: any) {
+    Handlebars.registerHelper('if_eq', function (a: any, b: any, options: any) {
       if (a === b) {
         return options.fn(this);
       }
@@ -422,11 +416,7 @@ export class EmailMarketingService {
   }
 
   // Send campaign
-  public async sendCampaign(
-    campaignId: string,
-    studioId: string,
-    userId: string
-  ) {
+  public async sendCampaign(campaignId: string, studioId: string, userId: string) {
     const campaign = await this.getCampaignById(campaignId, studioId);
 
     if (campaign.status !== 'DRAFT' && campaign.status !== 'SCHEDULED') {
@@ -443,7 +433,10 @@ export class EmailMarketingService {
     });
 
     // Get recipients
-    const recipients = await this.getAudienceClients(studioId, campaign.audienceFilter as AudienceFilter);
+    const recipients = await this.getAudienceClients(
+      studioId,
+      campaign.audienceFilter as AudienceFilter
+    );
 
     // Create recipient records
     const recipientRecords = await this.db.campaignRecipient.createMany({
@@ -461,7 +454,7 @@ export class EmailMarketingService {
 
     for (let i = 0; i < recipients.length; i += batchSize) {
       const batch = recipients.slice(i, i + batchSize);
-      
+
       await Promise.all(
         batch.map(async (client) => {
           try {
@@ -476,7 +469,12 @@ export class EmailMarketingService {
             await this.emailService.sendMarketingEmail({
               to: client.email,
               subject: campaign.subject,
-              html: this.addTrackingToHtml(personalizedContent.html, campaign.id, client.id, trackingId),
+              html: this.addTrackingToHtml(
+                personalizedContent.html,
+                campaign.id,
+                client.id,
+                trackingId
+              ),
               text: personalizedContent.text,
               fromName: campaign.fromName,
               fromEmail: campaign.fromEmail,
@@ -546,12 +544,7 @@ export class EmailMarketingService {
   }
 
   // Track email open
-  public async trackOpen(
-    campaignId: string,
-    clientId: string,
-    userAgent?: string,
-    ip?: string
-  ) {
+  public async trackOpen(campaignId: string, clientId: string, userAgent?: string, ip?: string) {
     const recipient = await this.db.campaignRecipient.findUnique({
       where: {
         campaignId_clientId: {
@@ -660,10 +653,7 @@ export class EmailMarketingService {
   }
 
   // Handle unsubscribe
-  public async handleUnsubscribe(
-    token: string,
-    campaignId?: string
-  ) {
+  public async handleUnsubscribe(token: string, campaignId?: string) {
     const client = await this.db.client.findUnique({
       where: { unsubscribeToken: token },
     });
@@ -742,7 +732,8 @@ export class EmailMarketingService {
     const openRate = delivered > 0 ? (campaign.openCount / delivered) * 100 : 0;
     const clickRate = delivered > 0 ? (campaign.clickCount / delivered) * 100 : 0;
     const unsubscribeRate = delivered > 0 ? (campaign.unsubscribeCount / delivered) * 100 : 0;
-    const bounceRate = campaign.sentCount > 0 ? (campaign.bounceCount / campaign.sentCount) * 100 : 0;
+    const bounceRate =
+      campaign.sentCount > 0 ? (campaign.bounceCount / campaign.sentCount) * 100 : 0;
 
     return {
       sent: campaign.sentCount,
@@ -772,21 +763,15 @@ export class EmailMarketingService {
   }
 
   // Get audience count
-  private async getAudienceCount(
-    studioId: string,
-    filter?: AudienceFilter
-  ): Promise<number> {
+  private async getAudienceCount(studioId: string, filter?: AudienceFilter): Promise<number> {
     const where = this.buildAudienceWhere(studioId, filter);
     return this.db.client.count({ where });
   }
 
   // Get audience clients
-  private async getAudienceClients(
-    studioId: string,
-    filter?: AudienceFilter
-  ): Promise<Client[]> {
+  private async getAudienceClients(studioId: string, filter?: AudienceFilter): Promise<Client[]> {
     const where = this.buildAudienceWhere(studioId, filter);
-    
+
     return this.db.client.findMany({
       where,
       include: {
@@ -799,10 +784,7 @@ export class EmailMarketingService {
   }
 
   // Build audience where clause
-  private buildAudienceWhere(
-    studioId: string,
-    filter?: AudienceFilter
-  ): Prisma.ClientWhereInput {
+  private buildAudienceWhere(studioId: string, filter?: AudienceFilter): Prisma.ClientWhereInput {
     const where: Prisma.ClientWhereInput = {
       studioId,
       deletedAt: null,
@@ -875,11 +857,7 @@ export class EmailMarketingService {
   }
 
   // Personalize content
-  private async personalizeContent(
-    htmlContent: string,
-    client: any,
-    campaign: EmailCampaign
-  ) {
+  private async personalizeContent(htmlContent: string, client: any, campaign: EmailCampaign) {
     const studio = await this.db.studio.findUnique({
       where: { id: campaign.studioId },
     });
@@ -942,12 +920,9 @@ export class EmailMarketingService {
   }
 
   // Get email templates
-  public async getEmailTemplates(
-    studioId: string,
-    category?: string
-  ): Promise<EmailTemplate[]> {
+  public async getEmailTemplates(studioId: string, category?: string): Promise<EmailTemplate[]> {
     const templates = await this.templateService.getEmailTemplates(studioId, category);
-    
+
     return templates.map((template) => ({
       id: template.id,
       name: template.name,
@@ -1027,7 +1002,7 @@ export class EmailMarketingService {
     // - Setting up triggers for various events
     // - Scheduling automated sends
     // - Managing automation workflows
-    
+
     const automation = await this.db.systemSetting.create({
       data: {
         studioId,
@@ -1165,17 +1140,17 @@ export class EmailMarketingService {
       totalSent: totalSent._sum.sentCount || 0,
       avgOpenRate: Number(avgOpenRate[0]?.avg_open_rate || 0).toFixed(2),
       avgClickRate: Number(avgClickRate[0]?.avg_click_rate || 0).toFixed(2),
-      topPerformingCampaigns: topPerformingCampaigns.map(campaign => ({
+      topPerformingCampaigns: topPerformingCampaigns.map((campaign) => ({
         ...campaign,
-        openRate: campaign.sentCount > 0 
-          ? ((campaign.openCount / campaign.sentCount) * 100).toFixed(2)
-          : 0,
-        clickRate: campaign.sentCount > 0
-          ? ((campaign.clickCount / campaign.sentCount) * 100).toFixed(2)
-          : 0,
+        openRate:
+          campaign.sentCount > 0 ? ((campaign.openCount / campaign.sentCount) * 100).toFixed(2) : 0,
+        clickRate:
+          campaign.sentCount > 0
+            ? ((campaign.clickCount / campaign.sentCount) * 100).toFixed(2)
+            : 0,
       })),
       engagementByDay: this.formatDayOfWeekData(engagementByDay),
-      engagementByHour: engagementByHour.map(item => ({
+      engagementByHour: engagementByHour.map((item) => ({
         hour: Number(item.hour),
         opens: Number(item.opens),
       })),
@@ -1186,7 +1161,7 @@ export class EmailMarketingService {
   private formatDayOfWeekData(data: any[]) {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const result = days.map((day, index) => {
-      const found = data.find(d => Number(d.day_of_week) === index);
+      const found = data.find((d) => Number(d.day_of_week) === index);
       return {
         day,
         opens: found ? Number(found.opens) : 0,

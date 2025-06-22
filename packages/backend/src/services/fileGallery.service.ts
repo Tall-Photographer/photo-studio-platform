@@ -92,13 +92,9 @@ export class FileGalleryService {
     large: { width: 800, height: 800 },
   };
 
-  private readonly supportedImageFormats = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'tiff', 'bmp'
-  ];
+  private readonly supportedImageFormats = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tiff', 'bmp'];
 
-  private readonly supportedVideoFormats = [
-    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv'
-  ];
+  private readonly supportedVideoFormats = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv'];
 
   private constructor() {
     this.s3 = new S3({
@@ -133,17 +129,19 @@ export class FileGalleryService {
       const fileType = this.getFileType(file.mimetype, fileExtension);
 
       // Upload to S3
-      const uploadResult = await this.s3.upload({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: fileKey,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        Metadata: {
-          originalName: file.originalname,
-          projectId: options.projectId,
-          uploadedBy,
-        },
-      }).promise();
+      const uploadResult = await this.s3
+        .upload({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: fileKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+          Metadata: {
+            originalName: file.originalname,
+            projectId: options.projectId,
+            uploadedBy,
+          },
+        })
+        .promise();
 
       // Process image if needed
       let thumbnailUrl: string | undefined;
@@ -166,20 +164,12 @@ export class FileGalleryService {
 
         // Generate thumbnail
         if (options.generateThumbnail !== false) {
-          thumbnailUrl = await this.generateThumbnail(
-            file.buffer,
-            fileKey,
-            options.projectId
-          );
+          thumbnailUrl = await this.generateThumbnail(file.buffer, fileKey, options.projectId);
         }
 
         // Add watermark if requested
         if (options.addWatermark) {
-          watermarkUrl = await this.addWatermark(
-            file.buffer,
-            fileKey,
-            options.projectId
-          );
+          watermarkUrl = await this.addWatermark(file.buffer, fileKey, options.projectId);
         }
       }
 
@@ -244,18 +234,16 @@ export class FileGalleryService {
     options: FileUploadOptions,
     uploadedBy: string
   ): Promise<File[]> {
-    const uploadPromises = files.map(file => 
-      this.uploadFile(file, options, uploadedBy)
-    );
+    const uploadPromises = files.map((file) => this.uploadFile(file, options, uploadedBy));
 
     const results = await Promise.allSettled(uploadPromises);
-    
+
     const successfulUploads = results
-      .filter(result => result.status === 'fulfilled')
-      .map(result => (result as PromiseFulfilledResult<File>).value);
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => (result as PromiseFulfilledResult<File>).value);
 
     const failedUploads = results
-      .filter(result => result.status === 'rejected')
+      .filter((result) => result.status === 'rejected')
       .map((result, index) => ({
         filename: files[index].originalname,
         error: (result as PromiseRejectedResult).reason.message,
@@ -269,18 +257,19 @@ export class FileGalleryService {
   }
 
   // Get gallery
-  public async getGallery(
-    projectId: string,
-    options: GalleryOptions = {}
-  ): Promise<Gallery> {
+  public async getGallery(projectId: string, options: GalleryOptions = {}): Promise<Gallery> {
     const project = await this.db.project.findUnique({
       where: { id: projectId },
       include: {
         client: true,
         files: {
           where: {
-            isEdited: options.includeEdited === true ? true : 
-                     options.includeRaw === true ? false : undefined,
+            isEdited:
+              options.includeEdited === true
+                ? true
+                : options.includeRaw === true
+                  ? false
+                  : undefined,
           },
           orderBy: this.getOrderBy(options.sortBy),
         },
@@ -295,12 +284,12 @@ export class FileGalleryService {
     const metadata = {
       totalFiles: project.files.length,
       totalSize: project.files.reduce((sum, file) => sum + Number(file.size), 0),
-      selectedCount: project.files.filter(f => f.isSelected).length,
-      editedCount: project.files.filter(f => f.isEdited).length,
+      selectedCount: project.files.filter((f) => f.isSelected).length,
+      editedCount: project.files.filter((f) => f.isEdited).length,
     };
 
     // Group files if requested
-    const groupedFiles = options.groupBy 
+    const groupedFiles = options.groupBy
       ? this.groupFiles(project.files, options.groupBy)
       : project.files;
 
@@ -339,9 +328,11 @@ export class FileGalleryService {
       where: { id: projectId },
       include: {
         files: {
-          where: options.fileIds ? {
-            id: { in: options.fileIds },
-          } : undefined,
+          where: options.fileIds
+            ? {
+                id: { in: options.fileIds },
+              }
+            : undefined,
         },
       },
     });
@@ -365,13 +356,11 @@ export class FileGalleryService {
           name: options.name || project.name,
           description: options.description || project.description,
           password: options.password ? await this.hashPassword(options.password) : null,
-          expiresAt: options.expiresIn 
-            ? dayjs().add(options.expiresIn, 'days').toDate()
-            : null,
+          expiresAt: options.expiresIn ? dayjs().add(options.expiresIn, 'days').toDate() : null,
           allowDownload: options.allowDownload ?? true,
           allowSelection: options.allowSelection ?? true,
           watermarkEnabled: options.watermarkEnabled ?? false,
-          fileIds: options.fileIds || project.files.map(f => f.id),
+          fileIds: options.fileIds || project.files.map((f) => f.id),
           createdBy,
           createdAt: new Date(),
         },
@@ -411,9 +400,7 @@ export class FileGalleryService {
       coverImage: project.files[0]?.thumbnailUrl,
       shareUrl,
       password: options.password ? '***' : undefined,
-      expiresAt: options.expiresIn 
-        ? dayjs().add(options.expiresIn, 'days').toDate()
-        : undefined,
+      expiresAt: options.expiresIn ? dayjs().add(options.expiresIn, 'days').toDate() : undefined,
       allowDownload: options.allowDownload ?? true,
       allowSelection: options.allowSelection ?? true,
       watermarkEnabled: options.watermarkEnabled ?? false,
@@ -422,7 +409,7 @@ export class FileGalleryService {
         totalFiles: project.files.length,
         totalSize: project.files.reduce((sum, f) => sum + Number(f.size), 0),
         selectedCount: 0,
-        editedCount: project.files.filter(f => f.isEdited).length,
+        editedCount: project.files.filter((f) => f.isEdited).length,
       },
     };
   }
@@ -457,9 +444,7 @@ export class FileGalleryService {
       await this.db.project.update({
         where: { id: file.projectId },
         data: {
-          selectedFiles: updates.isSelected 
-            ? { increment: 1 }
-            : { decrement: 1 },
+          selectedFiles: updates.isSelected ? { increment: 1 } : { decrement: 1 },
         },
       });
     }
@@ -468,9 +453,7 @@ export class FileGalleryService {
       await this.db.project.update({
         where: { id: file.projectId },
         data: {
-          editedFiles: updates.isEdited 
-            ? { increment: 1 }
-            : { decrement: 1 },
+          editedFiles: updates.isEdited ? { increment: 1 } : { decrement: 1 },
         },
       });
     }
@@ -547,27 +530,33 @@ export class FileGalleryService {
 
     // Delete from S3
     try {
-      await this.s3.deleteObject({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: file.storageKey,
-      }).promise();
+      await this.s3
+        .deleteObject({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: file.storageKey,
+        })
+        .promise();
 
       // Delete thumbnail if exists
       if (file.thumbnailUrl) {
         const thumbnailKey = this.getKeyFromUrl(file.thumbnailUrl);
-        await this.s3.deleteObject({
-          Bucket: process.env.AWS_S3_BUCKET!,
-          Key: thumbnailKey,
-        }).promise();
+        await this.s3
+          .deleteObject({
+            Bucket: process.env.AWS_S3_BUCKET!,
+            Key: thumbnailKey,
+          })
+          .promise();
       }
 
       // Delete watermark if exists
       if (file.watermarkUrl) {
         const watermarkKey = this.getKeyFromUrl(file.watermarkUrl);
-        await this.s3.deleteObject({
-          Bucket: process.env.AWS_S3_BUCKET!,
-          Key: watermarkKey,
-        }).promise();
+        await this.s3
+          .deleteObject({
+            Bucket: process.env.AWS_S3_BUCKET!,
+            Key: watermarkKey,
+          })
+          .promise();
       }
     } catch (error) {
       this.logger.error('Failed to delete file from S3:', error);
@@ -633,10 +622,7 @@ export class FileGalleryService {
 
     if (options.deliveryMethod === 'download') {
       // Create zip file with selected files
-      downloadUrl = await this.createDownloadPackage(
-        project.files,
-        packageId
-      );
+      downloadUrl = await this.createDownloadPackage(project.files, packageId);
     }
 
     // Store delivery package
@@ -653,9 +639,7 @@ export class FileGalleryService {
           deliveryMethod: options.deliveryMethod,
           status: 'ready',
           downloadUrl,
-          expiresAt: options.expiresIn
-            ? dayjs().add(options.expiresIn, 'days').toDate()
-            : null,
+          expiresAt: options.expiresIn ? dayjs().add(options.expiresIn, 'days').toDate() : null,
           createdBy,
           createdAt: new Date(),
         },
@@ -680,9 +664,7 @@ export class FileGalleryService {
         projectName: project.name,
         deliveryMethod: options.deliveryMethod,
         downloadUrl,
-        expiresAt: options.expiresIn
-          ? dayjs().add(options.expiresIn, 'days').toDate()
-          : undefined,
+        expiresAt: options.expiresIn ? dayjs().add(options.expiresIn, 'days').toDate() : undefined,
       });
     }
 
@@ -708,9 +690,7 @@ export class FileGalleryService {
       deliveryMethod: options.deliveryMethod,
       status: 'ready',
       downloadUrl,
-      expiresAt: options.expiresIn
-        ? dayjs().add(options.expiresIn, 'days').toDate()
-        : undefined,
+      expiresAt: options.expiresIn ? dayjs().add(options.expiresIn, 'days').toDate() : undefined,
       deliveredAt: new Date(),
     };
   }
@@ -730,10 +710,12 @@ export class FileGalleryService {
     }
 
     // Download original from S3
-    const originalData = await this.s3.getObject({
-      Bucket: process.env.AWS_S3_BUCKET!,
-      Key: file.storageKey,
-    }).promise();
+    const originalData = await this.s3
+      .getObject({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: file.storageKey,
+      })
+      .promise();
 
     let processedImage = sharp(originalData.Body as Buffer);
 
@@ -759,12 +741,14 @@ export class FileGalleryService {
     const newKey = `projects/${file.projectId}/edited/${uuidv4()}.${options.format || 'jpg'}`;
 
     // Upload processed image
-    const uploadResult = await this.s3.upload({
-      Bucket: process.env.AWS_S3_BUCKET!,
-      Key: newKey,
-      Body: processedBuffer,
-      ContentType: `image/${options.format || 'jpeg'}`,
-    }).promise();
+    const uploadResult = await this.s3
+      .upload({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: newKey,
+        Body: processedBuffer,
+        ContentType: `image/${options.format || 'jpeg'}`,
+      })
+      .promise();
 
     // Create new file record for edited version
     const editedFile = await this.db.file.create({
@@ -796,7 +780,13 @@ export class FileGalleryService {
     }
 
     const allowedTypes = process.env.ALLOWED_FILE_TYPES?.split(',') || [
-      'jpg', 'jpeg', 'png', 'gif', 'pdf', 'mp4', 'mov'
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'pdf',
+      'mp4',
+      'mov',
     ];
 
     const fileExtension = path.extname(file.originalname).toLowerCase().slice(1);
@@ -835,12 +825,14 @@ export class FileGalleryService {
       .jpeg({ quality: 80 })
       .toBuffer();
 
-    const uploadResult = await this.s3.upload({
-      Bucket: process.env.AWS_S3_BUCKET!,
-      Key: thumbnailKey,
-      Body: thumbnail,
-      ContentType: 'image/jpeg',
-    }).promise();
+    const uploadResult = await this.s3
+      .upload({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: thumbnailKey,
+        Body: thumbnail,
+        ContentType: 'image/jpeg',
+      })
+      .promise();
 
     return uploadResult.Location;
   }
@@ -880,18 +872,22 @@ export class FileGalleryService {
     `;
 
     const watermarked = await sharp(buffer)
-      .composite([{
-        input: Buffer.from(svgWatermark),
-        gravity: 'southeast',
-      }])
+      .composite([
+        {
+          input: Buffer.from(svgWatermark),
+          gravity: 'southeast',
+        },
+      ])
       .toBuffer();
 
-    const uploadResult = await this.s3.upload({
-      Bucket: process.env.AWS_S3_BUCKET!,
-      Key: watermarkKey,
-      Body: watermarked,
-      ContentType: 'image/jpeg',
-    }).promise();
+    const uploadResult = await this.s3
+      .upload({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: watermarkKey,
+        Body: watermarked,
+        ContentType: 'image/jpeg',
+      })
+      .promise();
 
     return uploadResult.Location;
   }
@@ -914,18 +910,22 @@ export class FileGalleryService {
         </svg>
       `;
 
-      return image.composite([{
-        input: Buffer.from(svgWatermark),
-        gravity: watermark.position || 'southeast',
-      }]);
+      return image.composite([
+        {
+          input: Buffer.from(svgWatermark),
+          gravity: watermark.position || 'southeast',
+        },
+      ]);
     }
 
     if (watermark?.logo) {
-      return image.composite([{
-        input: watermark.logo,
-        gravity: watermark.position || 'southeast',
-        blend: 'over',
-      }]);
+      return image.composite([
+        {
+          input: watermark.logo,
+          gravity: watermark.position || 'southeast',
+          blend: 'over',
+        },
+      ]);
     }
 
     return image;
@@ -974,10 +974,7 @@ export class FileGalleryService {
     return bcrypt.hash(password, 10);
   }
 
-  private async createDownloadPackage(
-    files: File[],
-    packageId: string
-  ): Promise<string> {
+  private async createDownloadPackage(files: File[], packageId: string): Promise<string> {
     // This would create a zip file with all selected files
     // For now, returning a placeholder URL
     return `${process.env.APP_URL}/api/v1/delivery/${packageId}/download`;

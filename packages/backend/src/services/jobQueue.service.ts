@@ -17,7 +17,7 @@ export class JobQueueService {
 
   public async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     this.logger.info('Job queue service initialized');
     this.isInitialized = true;
   }

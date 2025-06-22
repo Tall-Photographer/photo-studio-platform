@@ -31,8 +31,8 @@ export class DatabaseService {
       {
         auth: {
           autoRefreshToken: false,
-          persistSession: false
-        }
+          persistSession: false,
+        },
       }
     );
 
@@ -79,10 +79,11 @@ export class DatabaseService {
       await this.prisma.$connect();
       this.isConnected = true;
       this.logger.info('✅ Supabase Database connected successfully');
-      
+
       // Test Supabase connection
       const { data, error } = await this.supabase.from('studios').select('count').limit(1);
-      if (error && error.code !== 'PGRST116') { // PGRST116 is table not found, which is OK during setup
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 is table not found, which is OK during setup
         this.logger.warn('Supabase direct access warning:', error.message);
       } else {
         this.logger.info('✅ Supabase client initialized successfully');
@@ -126,9 +127,7 @@ export class DatabaseService {
   }
 
   // Transaction helper
-  public async transaction<T>(
-    callback: (prisma: PrismaClient) => Promise<T>
-  ): Promise<T> {
+  public async transaction<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(callback);
   }
 
@@ -235,11 +234,11 @@ export class DatabaseService {
 
   public async findBookingsByStudio(studioId: string, filters?: any) {
     const where: any = { studioId, deletedAt: null };
-    
+
     if (filters?.status) {
       where.status = filters.status;
     }
-    
+
     if (filters?.startDate && filters?.endDate) {
       where.startDate = {
         gte: new Date(filters.startDate),
@@ -510,33 +509,33 @@ export class DatabaseService {
       equipmentInUse,
     ] = await Promise.all([
       // Total clients
-      this.prisma.client.count({ 
-        where: { studioId, deletedAt: null } 
+      this.prisma.client.count({
+        where: { studioId, deletedAt: null },
       }),
-      
+
       // Total bookings
-      this.prisma.booking.count({ 
-        where: { studioId, deletedAt: null } 
+      this.prisma.booking.count({
+        where: { studioId, deletedAt: null },
       }),
-      
+
       // Active projects
-      this.prisma.project.count({ 
-        where: { 
+      this.prisma.project.count({
+        where: {
           studioId,
           deletedAt: null,
-          status: { in: ['IN_PROGRESS', 'IN_EDITING', 'CLIENT_REVIEW'] }
-        } 
+          status: { in: ['IN_PROGRESS', 'IN_EDITING', 'CLIENT_REVIEW'] },
+        },
       }),
-      
+
       // Pending invoices
       this.prisma.invoice.count({
         where: {
           studioId,
           deletedAt: null,
-          status: { in: ['DRAFT', 'SENT', 'VIEWED'] }
-        }
+          status: { in: ['DRAFT', 'SENT', 'VIEWED'] },
+        },
       }),
-      
+
       // Recent bookings
       this.prisma.booking.findMany({
         where: { studioId, deletedAt: null },
@@ -551,7 +550,7 @@ export class DatabaseService {
             },
           },
           assignments: {
-            include: { 
+            include: {
               user: {
                 select: {
                   firstName: true,
@@ -562,7 +561,7 @@ export class DatabaseService {
           },
         },
       }),
-      
+
       // Recent projects
       this.prisma.project.findMany({
         where: { studioId, deletedAt: null },
@@ -570,7 +569,7 @@ export class DatabaseService {
         orderBy: { updatedAt: 'desc' },
         include: {
           booking: {
-            include: { 
+            include: {
               client: {
                 select: {
                   firstName: true,
@@ -582,10 +581,10 @@ export class DatabaseService {
           },
         },
       }),
-      
+
       // Monthly revenue (current month)
       this.prisma.payment.aggregate({
-        where: { 
+        where: {
           studioId,
           status: 'COMPLETED',
           paymentDate: {
@@ -595,7 +594,7 @@ export class DatabaseService {
         },
         _sum: { amount: true },
       }),
-      
+
       // Equipment currently in use
       this.prisma.equipmentAssignment.count({
         where: {
@@ -620,17 +619,15 @@ export class DatabaseService {
 
   // File operations with Supabase Storage
   public async uploadFile(
-    bucketName: string, 
-    filePath: string, 
+    bucketName: string,
+    filePath: string,
     file: Buffer | Uint8Array | File,
     options?: { contentType?: string; metadata?: Record<string, string> }
   ) {
-    const { data, error } = await this.supabase.storage
-      .from(bucketName)
-      .upload(filePath, file, {
-        contentType: options?.contentType,
-        metadata: options?.metadata,
-      });
+    const { data, error } = await this.supabase.storage.from(bucketName).upload(filePath, file, {
+      contentType: options?.contentType,
+      metadata: options?.metadata,
+    });
 
     if (error) {
       this.logger.error('Supabase file upload error:', error);
@@ -641,17 +638,13 @@ export class DatabaseService {
   }
 
   public async getFileUrl(bucketName: string, filePath: string) {
-    const { data } = this.supabase.storage
-      .from(bucketName)
-      .getPublicUrl(filePath);
+    const { data } = this.supabase.storage.from(bucketName).getPublicUrl(filePath);
 
     return data.publicUrl;
   }
 
   public async deleteFile(bucketName: string, filePath: string) {
-    const { error } = await this.supabase.storage
-      .from(bucketName)
-      .remove([filePath]);
+    const { error } = await this.supabase.storage.from(bucketName).remove([filePath]);
 
     if (error) {
       this.logger.error('Supabase file deletion error:', error);
@@ -695,7 +688,7 @@ export class DatabaseService {
     const field = fieldMap[entity];
     const yearMonth = new Date().toISOString().slice(0, 7).replace('-', '');
     const prefixPart = prefix || entity.toUpperCase().slice(0, 3);
-    
+
     let attempts = 0;
     const maxAttempts = 100;
 

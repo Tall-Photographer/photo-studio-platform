@@ -16,7 +16,7 @@ const router = Router();
  *       - bearerAuth: []
  */
 router.get('/', requireStaff, (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     success: true,
     message: 'Project routes - implementation in progress',
     endpoints: [
@@ -26,8 +26,8 @@ router.get('/', requireStaff, (req: Request, res: Response) => {
       'PUT /api/v1/projects/:id - Update project',
       'DELETE /api/v1/projects/:id - Delete project',
       'GET /api/v1/projects/:id/files - Get project files',
-      'POST /api/v1/projects/:id/files - Upload files'
-    ]
+      'POST /api/v1/projects/:id/files - Upload files',
+    ],
   });
 });
 

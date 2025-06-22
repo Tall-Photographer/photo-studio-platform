@@ -119,10 +119,7 @@ export class EquipmentService {
 
     if (filters.needsMaintenance) {
       const today = new Date();
-      where.OR = [
-        { nextMaintenanceDate: { lte: today } },
-        { nextMaintenanceDate: null },
-      ];
+      where.OR = [{ nextMaintenanceDate: { lte: today } }, { nextMaintenanceDate: null }];
     }
 
     const [equipment, total] = await Promise.all([
@@ -494,10 +491,7 @@ export class EquipmentService {
             AND: [
               { checkedOutAt: { lt: endDate } },
               {
-                OR: [
-                  { checkedInAt: null },
-                  { checkedInAt: { gt: startDate } },
-                ],
+                OR: [{ checkedInAt: null }, { checkedInAt: { gt: startDate } }],
               },
             ],
           },
@@ -620,10 +614,7 @@ export class EquipmentService {
         studioId,
         deletedAt: null,
         status: { not: 'RETIRED' },
-        OR: [
-          { nextMaintenanceDate: { lte: cutoffDate } },
-          { nextMaintenanceDate: null },
-        ],
+        OR: [{ nextMaintenanceDate: { lte: cutoffDate } }, { nextMaintenanceDate: null }],
       },
       include: {
         maintenanceLogs: {
@@ -633,21 +624,23 @@ export class EquipmentService {
       },
     });
 
-    return equipment.map((eq) => {
-      const lastMaintenance = eq.maintenanceLogs[0];
-      const nextDue = eq.nextMaintenanceDate || this.calculateNextMaintenanceDate(eq);
-      const daysUntilDue = dayjs(nextDue).diff(dayjs(), 'days');
+    return equipment
+      .map((eq) => {
+        const lastMaintenance = eq.maintenanceLogs[0];
+        const nextDue = eq.nextMaintenanceDate || this.calculateNextMaintenanceDate(eq);
+        const daysUntilDue = dayjs(nextDue).diff(dayjs(), 'days');
 
-      return {
-        equipmentId: eq.id,
-        equipment: eq,
-        lastMaintenance: lastMaintenance?.performedAt,
-        nextDue,
-        daysUntilDue,
-        isOverdue: daysUntilDue < 0,
-        maintenanceType: this.getMaintenanceType(eq.category),
-      };
-    }).sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+        return {
+          equipmentId: eq.id,
+          equipment: eq,
+          lastMaintenance: lastMaintenance?.performedAt,
+          nextDue,
+          daysUntilDue,
+          isOverdue: daysUntilDue < 0,
+          maintenanceType: this.getMaintenanceType(eq.category),
+        };
+      })
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
   }
 
   // Equipment statistics
@@ -733,19 +726,16 @@ export class EquipmentService {
 
     // Calculate utilization rate
     const totalUtilization = utilizationData.reduce((sum, eq) => {
-      const utilization = eq.total_hours_owned > 0
-        ? (Number(eq.totalHoursUsed) / eq.total_hours_owned) * 100
-        : 0;
+      const utilization =
+        eq.total_hours_owned > 0 ? (Number(eq.totalHoursUsed) / eq.total_hours_owned) * 100 : 0;
       return sum + utilization;
     }, 0);
-    const utilizationRate = utilizationData.length > 0
-      ? totalUtilization / utilizationData.length
-      : 0;
+    const utilizationRate =
+      utilizationData.length > 0 ? totalUtilization / utilizationData.length : 0;
 
     // Calculate maintenance compliance
-    const maintenanceCompliance = totalEquipment > 0
-      ? ((totalEquipment - maintenanceData) / totalEquipment) * 100
-      : 100;
+    const maintenanceCompliance =
+      totalEquipment > 0 ? ((totalEquipment - maintenanceData) / totalEquipment) * 100 : 100;
 
     return {
       totalEquipment,
@@ -833,9 +823,10 @@ export class EquipmentService {
 
     while (exists) {
       barcode = `EQ${studioId.slice(-4)}${Date.now().toString(36).toUpperCase()}`;
-      exists = await this.db.equipment.findUnique({
-        where: { barcode },
-      }) !== null;
+      exists =
+        (await this.db.equipment.findUnique({
+          where: { barcode },
+        })) !== null;
     }
 
     return barcode!;
@@ -1066,7 +1057,7 @@ export class EquipmentService {
     ];
 
     if (category) {
-      return templates.find(t => t.category === category)?.templates || [];
+      return templates.find((t) => t.category === category)?.templates || [];
     }
 
     return templates;

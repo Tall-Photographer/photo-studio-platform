@@ -37,7 +37,7 @@ export const authMiddleware = async (
 
     const token = authHeader.substring(7);
     const jwtSecret = process.env.JWT_SECRET;
-    
+
     if (!jwtSecret) {
       logger.error('JWT_SECRET is not defined');
       res.status(500).json({
@@ -96,10 +96,10 @@ export const requireAdmin = requireRole(['SUPER_ADMIN', 'STUDIO_ADMIN']);
 export const requireManagerOrAdmin = requireRole(['SUPER_ADMIN', 'STUDIO_ADMIN', 'MANAGER']);
 export const requireStaff = requireRole([
   'SUPER_ADMIN',
-  'STUDIO_ADMIN', 
+  'STUDIO_ADMIN',
   'MANAGER',
   'PHOTOGRAPHER',
   'VIDEOGRAPHER',
   'ASSISTANT',
-  'EDITOR'
+  'EDITOR',
 ]);
