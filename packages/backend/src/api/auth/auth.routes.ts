@@ -1,9 +1,9 @@
 // packages/backend/src/api/auth/auth.routes.ts
 import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import bcrypt from 'argon2';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import * as argon2 from 'argon2';
+import * as jwt from 'jsonwebtoken';
+import * as crypto from 'crypto';
 import { DatabaseService } from '../../services/database.service';
 import { CacheService } from '../../services/cache.service';
 import { LoggerService } from '../../services/logger.service';
@@ -37,8 +37,22 @@ const resetPasswordValidation = [
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
 ];
 
+// Interfaces
+interface JwtPayload {
+  userId: string;
+  studioId: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
+interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
 // Helper functions
-const generateTokens = (userId: string, studioId: string, role: string) => {
+const generateTokens = (userId: string, studioId: string, role: string): TokenResponse => {
   const jwtSecret = process.env.JWT_SECRET!;
   const refreshSecret = process.env.JWT_REFRESH_SECRET!;
 
@@ -139,7 +153,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password);
+    const hashedPassword = await argon2.hash(password);
 
     // Create studio and user in transaction
     const result = await database.getClient().$transaction(async (prisma) => {
@@ -298,7 +312,7 @@ router.post('/login', loginValidation, async (req: Request, res: Response) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.verify(user.password, password);
+    const isValidPassword = await argon2.verify(user.password, password);
     if (!isValidPassword) {
       return res.status(401).json({
         success: false,
@@ -427,6 +441,16 @@ router.post('/forgot-password', forgotPasswordValidation, async (req: Request, r
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Store token in database and cache
+    await database.getClient().user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      },
+    });
+    
     await cache.setPasswordResetToken(email, resetToken);
 
     // Send reset email
@@ -496,12 +520,7 @@ router.post('/reset-password', resetPasswordValidation, async (req: Request, res
 
     const { token, password } = req.body;
 
-    // Find the email associated with this token
-    // Note: In a real implementation, you might want to store token-email mapping differently
-    // For now, we'll search through all reset tokens (not ideal for production)
-    let userEmail: string | null = null;
-    
-    // This is a simplified approach - in production, consider storing email with token
+    // Find user with this token
     const user = await database.getClient().user.findFirst({
       where: {
         passwordResetToken: token,
@@ -519,7 +538,7 @@ router.post('/reset-password', resetPasswordValidation, async (req: Request, res
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(password);
+    const hashedPassword = await argon2.hash(password);
 
     // Update user password
     await database.updateUser(user.id, {
@@ -586,7 +605,6 @@ router.post('/verify-email', async (req: Request, res: Response) => {
     }
 
     // Find user with this verification token
-    // Similar to password reset, this is simplified
     const user = await database.getClient().user.findFirst({
       where: {
         emailVerificationToken: token,
@@ -660,9 +678,9 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
     // Verify refresh token
     const refreshSecret = process.env.JWT_REFRESH_SECRET!;
-    let decoded;
+    let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(refreshToken, refreshSecret) as any;
+      decoded = jwt.verify(refreshToken, refreshSecret) as JwtPayload;
     } catch (jwtError) {
       return res.status(401).json({
         success: false,

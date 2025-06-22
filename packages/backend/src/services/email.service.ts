@@ -1,8 +1,8 @@
 // packages/backend/src/services/email.service.ts
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 import { LoggerService } from './logger.service';
 
-interface EmailConfig {
+interface EmailConfiguration {
   host: string;
   port: number;
   secure: boolean;
@@ -12,18 +12,15 @@ interface EmailConfig {
   };
 }
 
-// packages/backend/src/services/email.service.ts
-import nodemailer from 'nodemailer';
-import { LoggerService } from './logger.service';
-
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
+interface BookingEmailDetails {
+  title: string;
+  startDate: string;
+  endDate: string;
+  duration: number;
+  location?: string;
+  totalAmount: number;
+  currency: string;
+  studioName: string;
 }
 
 export class EmailService {
@@ -67,7 +64,7 @@ export class EmailService {
   }
 
   private setupSMTP(): void {
-    const config: EmailConfig = {
+    const config: EmailConfiguration = {
       host: process.env.SMTP_HOST!,
       port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
@@ -234,86 +231,10 @@ export class EmailService {
     await this.sendEmail(email, subject, html);
   }
 
-  public async sendWelcomeEmail(email: string, firstName: string, studioName: string): Promise<void> {
-    const loginUrl = `${process.env.FRONTEND_URL}/login`;
-    
-    const subject = `Welcome to Shootlinks, ${firstName}!`;
-    
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to Shootlinks</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #059669; color: white; padding: 20px; text-align: center; }
-          .content { padding: 30px 20px; background: #f9fafb; }
-          .button { display: inline-block; background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { background: #e5e7eb; padding: 20px; text-align: center; font-size: 14px; color: #6b7280; }
-          .feature { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #059669; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to Shootlinks!</h1>
-          </div>
-          <div class="content">
-            <h2>Hi ${firstName},</h2>
-            <p>Congratulations! Your studio "<strong>${studioName}</strong>" has been successfully set up on Shootlinks.</p>
-            
-            <p>You now have access to a comprehensive photography studio management platform with the following features:</p>
-            
-            <div class="feature">
-              <strong>📅 Booking Management</strong><br>
-              Schedule and manage client bookings with ease
-            </div>
-            
-            <div class="feature">
-              <strong>👥 Client Database</strong><br>
-              Keep track of all your clients and their preferences
-            </div>
-            
-            <div class="feature">
-              <strong>📸 Equipment Tracking</strong><br>
-              Monitor your equipment usage and maintenance
-            </div>
-            
-            <div class="feature">
-              <strong>💰 Financial Management</strong><br>
-              Generate invoices and track payments
-            </div>
-            
-            <div class="feature">
-              <strong>📊 Business Analytics</strong><br>
-              Get insights into your studio's performance
-            </div>
-            
-            <a href="${loginUrl}" class="button">Access Your Dashboard</a>
-            
-            <p>If you have any questions or need help getting started, don't hesitate to reach out to our support team.</p>
-            
-            <p>Welcome aboard!<br>The Shootlinks Team</p>
-          </div>
-          <div class="footer">
-            <p>© 2025 Shootlinks. All rights reserved.</p>
-            <p>This email was sent to ${email}</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    await this.sendEmail(email, subject, html);
-  }
-
   public async sendBookingConfirmation(
     email: string,
     clientName: string,
-    bookingDetails: any
+    bookingDetails: BookingEmailDetails
   ): Promise<void> {
     const subject = `Booking Confirmation - ${bookingDetails.title}`;
     
