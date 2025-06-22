@@ -1,0 +1,1344 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  STUDIO_ADMIN
+  MANAGER
+  PHOTOGRAPHER
+  VIDEOGRAPHER
+  ASSISTANT
+  EDITOR
+  CLIENT
+}
+
+enum BookingStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  IN_EDITING
+  CLIENT_REVIEW
+  DELIVERED
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentGateway {
+  STRIPE
+  PAYPAL
+  SQUARE
+  AUTHORIZE_NET
+  BRAINTREE
+  MANUAL
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_UPDATED
+  BOOKING_CANCELLED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PROJECT_UPDATED
+  FILE_UPLOADED
+  DEADLINE_APPROACHING
+  MAINTENANCE_DUE
+  SYSTEM_ALERT
+  MARKETING_CAMPAIGN
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  CAD
+  AUD
+  JPY
+  CNY
+  INR
+  AED
+  SAR
+}
+
+enum ExpenseCategory {
+  EQUIPMENT
+  STUDIO_RENT
+  UTILITIES
+  MARKETING
+  TRAVEL
+  SUPPLIES
+  INSURANCE
+  SALARIES
+  FREELANCE
+  SOFTWARE
+  OTHER
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  REPAIR
+  RETIRED
+  LOST
+}
+
+// Core Models
+model Studio {
+  id                    String                @id @default(cuid())
+  name                  String
+  slug                  String                @unique
+  logo                  String?
+  primaryColor          String                @default("#000000")
+  secondaryColor        String                @default("#ffffff")
+  fontFamily            String                @default("Inter")
+  
+  // Contact & Business Info
+  email                 String                @unique
+  phone                 String?
+  website               String?
+  address               String?
+  city                  String?
+  state                 String?
+  country               String?
+  postalCode            String?
+  timezone              String                @default("UTC")
+  businessHours         Json?                 // { mon: { open: "09:00", close: "17:00" }, ... }
+  
+  // Financial Settings
+  defaultCurrency       Currency              @default(USD)
+  taxRate               Decimal               @default(0)
+  taxId                 String?
+  
+  // Features & Limits
+  maxUsers              Int                   @default(10)
+  maxStorageGB          Int                   @default(100)
+  features              Json                  @default("{}")
+  
+  // Subscription
+  subscriptionId        String?
+  subscriptionStatus    String                @default("trial")
+  subscriptionEndDate   DateTime?
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  users                 User[]
+  clients               Client[]
+  bookings              Booking[]
+  equipment             Equipment[]
+  rooms                 Room[]
+  projects              Project[]
+  invoices              Invoice[]
+  expenses              Expense[]
+  emailCampaigns        EmailCampaign[]
+  emailTemplates        EmailTemplate[]
+  shotListTemplates     ShotListTemplate[]
+  systemSettings        SystemSetting[]
+  auditLogs             AuditLog[]
+  currencyRates         CurrencyExchangeRate[]
+  
+  @@index([slug])
+  @@index([subscriptionStatus])
+}
+
+model User {
+  id                    String                @id @default(cuid())
+  studioId              String
+  email                 String                @unique
+  password              String?               // Null for OAuth users
+  role                  UserRole
+  
+  // Profile
+  firstName             String
+  lastName              String
+  phone                 String?
+  avatar                String?
+  bio                   String?
+  
+  // Settings
+  hourlyRate            Decimal?
+  commissionRate        Decimal?
+  skills                String[]              @default([])
+  specializations       String[]              @default([])
+  
+  // Security
+  emailVerified         Boolean               @default(false)
+  emailVerificationToken String?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  
+  // 2FA
+  twoFactorEnabled      Boolean               @default(false)
+  twoFactorSecret       String?
+  
+  // OAuth
+  googleId              String?
+  facebookId            String?
+  appleId               String?
+  
+  // Activity
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  loginCount            Int                   @default(0)
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  sessions              UserSession[]
+  bookingAssignments    BookingAssignment[]
+  projectAssignments    ProjectAssignment[]
+  equipmentCheckouts    EquipmentAssignment[]
+  createdBookings       Booking[]             @relation("BookingCreatedBy")
+  createdProjects       Project[]             @relation("ProjectCreatedBy")
+  createdInvoices       Invoice[]             @relation("InvoiceCreatedBy")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  editorProjects        Project[]             @relation("ProjectEditor")
+  expenses              Expense[]
+  
+  @@index([studioId, role])
+  @@index([email])
+}
+
+model UserSession {
+  id                    String                @id @default(cuid())
+  userId                String
+  token                 String                @unique
+  refreshToken          String                @unique
+  
+  // Device & Location
+  userAgent             String?
+  ip                    String?
+  deviceId              String?
+  deviceType            String?
+  
+  // Expiry
+  expiresAt             DateTime
+  refreshExpiresAt      DateTime
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  lastActivityAt        DateTime              @default(now())
+  
+  // Relations
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([token])
+  @@index([refreshToken])
+}
+
+model Client {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Contact Info
+  firstName             String
+  lastName              String
+  email                 String
+  phone                 String?
+  company               String?
+  
+  // Address
+  address               String?
+  city                  String?
+  state                 String?
+  country               String?
+  postalCode            String?
+  
+  // Preferences
+  preferredContactMethod String               @default("email")
+  notes                 String?
+  tags                  String[]              @default([])
+  
+  // Loyalty Program
+  loyaltyPoints         Int                   @default(0)
+  totalSpent            Decimal               @default(0)
+  bookingCount          Int                   @default(0)
+  isVip                 Boolean               @default(false)
+  discountPercentage    Decimal               @default(0)
+  
+  // Marketing
+  marketingConsent      Boolean               @default(false)
+  marketingConsentDate  DateTime?
+  unsubscribeToken      String?               @unique
+  
+  // Portal Access
+  portalEnabled         Boolean               @default(false)
+  portalPassword        String?
+  lastPortalLoginAt     DateTime?
+  
+  // Metadata
+  source                String?               // How they found us
+  referredBy            String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  bookings              Booking[]
+  projects              Project[]
+  invoices              Invoice[]
+  payments              Payment[]
+  files                 File[]
+  campaignRecipients    CampaignRecipient[]
+  reviews               Review[]
+  
+  @@unique([studioId, email])
+  @@index([studioId])
+  @@index([email])
+}
+
+model Booking {
+  id                    String                @id @default(cuid())
+  studioId              String
+  clientId              String
+  createdById           String
+  
+  // Booking Details
+  bookingNumber         String                @unique
+  title                 String
+  description           String?
+  type                  String                // wedding, portrait, commercial, etc.
+  
+  // Schedule
+  startDateTime         DateTime
+  endDateTime           DateTime
+  duration              Int                   // in minutes
+  
+  // Location
+  location              String?
+  locationNotes         String?
+  travelTime            Int?                  // in minutes
+  
+  // Status
+  status                BookingStatus         @default(PENDING)
+  confirmedAt           DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?
+  
+  // Financial
+  totalAmount           Decimal
+  depositAmount         Decimal               @default(0)
+  discountAmount        Decimal               @default(0)
+  taxAmount             Decimal               @default(0)
+  currency              Currency              @default(USD)
+  
+  // Settings
+  isRecurring           Boolean               @default(false)
+  recurringPattern      Json?                 // { frequency: "weekly", interval: 1, endDate: "2024-12-31" }
+  bufferTimeBefore      Int                   @default(0) // in minutes
+  bufferTimeAfter       Int                   @default(0) // in minutes
+  
+  // Contract
+  contractUrl           String?
+  contractSignedAt      DateTime?
+  
+  // Weather (for outdoor shoots)
+  weatherChecked        Boolean               @default(false)
+  weatherAlert          String?
+  
+  // Metadata
+  customFields          Json?
+  internalNotes         String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  createdBy             User                  @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  assignments           BookingAssignment[]
+  equipmentAssignments  EquipmentAssignment[]
+  roomAssignments       RoomAssignment[]
+  project               Project?
+  invoice               Invoice?
+  payments              Payment[]
+  
+  @@index([studioId, status])
+  @@index([clientId])
+  @@index([startDateTime, endDateTime])
+  @@index([bookingNumber])
+}
+
+model BookingAssignment {
+  id                    String                @id @default(cuid())
+  bookingId             String
+  userId                String
+  
+  // Assignment Details
+  role                  String                // photographer, videographer, assistant, etc.
+  isPrimary             Boolean               @default(false)
+  rate                  Decimal?              // Override user's default rate
+  hours                 Decimal?
+  
+  // Status
+  confirmedAt           DateTime?
+  declinedAt            DateTime?
+  declineReason         String?
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  booking               Booking               @relation(fields: [bookingId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@unique([bookingId, userId])
+  @@index([userId])
+}
+
+model Equipment {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Basic Info
+  name                  String
+  brand                 String?
+  model                 String?
+  serialNumber          String?
+  barcode               String?               @unique
+  qrCode                String?               @unique
+  
+  // Category & Type
+  category              String                // camera, lens, lighting, etc.
+  subcategory           String?
+  
+  // Purchase & Value
+  purchaseDate          DateTime?
+  purchasePrice         Decimal?
+  currentValue          Decimal?
+  currency              Currency              @default(USD)
+  supplier              String?
+  
+  // Status & Condition
+  status                EquipmentStatus       @default(AVAILABLE)
+  condition             String                @default("Good") // Excellent, Good, Fair, Poor
+  
+  // Location
+  defaultLocation       String?
+  currentLocation       String?
+  
+  // Specifications
+  specifications        Json?
+  accessories           String[]              @default([])
+  
+  // Maintenance
+  lastMaintenanceDate   DateTime?
+  nextMaintenanceDate   DateTime?
+  maintenanceNotes      String?
+  
+  // Insurance
+  insured               Boolean               @default(false)
+  insuranceProvider     String?
+  insurancePolicyNumber String?
+  insuranceExpiryDate   DateTime?
+  
+  // Usage
+  usageCount            Int                   @default(0)
+  totalHoursUsed        Decimal               @default(0)
+  
+  // Rental
+  isRentable            Boolean               @default(false)
+  rentalPricePerDay     Decimal?
+  rentalDeposit         Decimal?
+  
+  // Metadata
+  notes                 String?
+  tags                  String[]              @default([])
+  imageUrl              String?
+  manualUrl             String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  assignments           EquipmentAssignment[]
+  maintenanceLogs       MaintenanceLog[]
+  
+  @@index([studioId, status])
+  @@index([category])
+  @@index([barcode])
+  @@index([qrCode])
+}
+
+model EquipmentAssignment {
+  id                    String                @id @default(cuid())
+  equipmentId           String
+  bookingId             String?
+  userId                String
+  
+  // Check-out/Check-in
+  checkedOutAt          DateTime              @default(now())
+  expectedReturnAt      DateTime
+  checkedInAt           DateTime?
+  
+  // Condition
+  checkOutCondition     String
+  checkInCondition      String?
+  
+  // Notes
+  checkOutNotes         String?
+  checkInNotes          String?
+  damageReported        Boolean               @default(false)
+  damageDescription     String?
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  equipment             Equipment             @relation(fields: [equipmentId], references: [id])
+  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@index([equipmentId, checkedOutAt])
+  @@index([userId])
+  @@index([bookingId])
+}
+
+model MaintenanceLog {
+  id                    String                @id @default(cuid())
+  equipmentId           String
+  
+  // Maintenance Details
+  type                  String                // routine, repair, calibration, etc.
+  description           String
+  performedBy           String
+  cost                  Decimal?
+  currency              Currency              @default(USD)
+  
+  // Dates
+  performedAt           DateTime              @default(now())
+  nextDueDate           DateTime?
+  
+  // Parts
+  partsReplaced         String[]              @default([])
+  
+  // Metadata
+  notes                 String?
+  attachments           String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  equipment             Equipment             @relation(fields: [equipmentId], references: [id])
+  
+  @@index([equipmentId])
+}
+
+model Room {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Basic Info
+  name                  String
+  description           String?
+  capacity              Int
+  
+  // Pricing
+  pricePerHour          Decimal
+  pricePerHalfDay       Decimal?              // 4 hours
+  pricePerFullDay       Decimal?              // 8 hours
+  currency              Currency              @default(USD)
+  
+  // Features
+  area                  Decimal?              // in square meters
+  features              String[]              @default([]) // backdrop, lighting grid, etc.
+  permanentEquipment    String[]              @default([])
+  
+  // Availability
+  isActive              Boolean               @default(true)
+  minimumBookingHours   Int                   @default(1)
+  
+  // Environment
+  hasNaturalLight       Boolean               @default(false)
+  hasBlackoutOption     Boolean               @default(false)
+  hasAirConditioning    Boolean               @default(true)
+  hasHeating            Boolean               @default(true)
+  
+  // Access
+  accessInstructions    String?
+  keyLocation           String?
+  
+  // Metadata
+  images                String[]              @default([])
+  floorPlanUrl          String?
+  rules                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  assignments           RoomAssignment[]
+  
+  @@index([studioId, isActive])
+}
+
+model RoomAssignment {
+  id                    String                @id @default(cuid())
+  roomId                String
+  bookingId             String
+  
+  // Time
+  startDateTime         DateTime
+  endDateTime           DateTime
+  setupTime             Int                   @default(0) // in minutes
+  breakdownTime         Int                   @default(0) // in minutes
+  
+  // Pricing
+  totalPrice            Decimal
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  room                  Room                  @relation(fields: [roomId], references: [id])
+  booking               Booking               @relation(fields: [bookingId], references: [id])
+  
+  @@unique([roomId, startDateTime, endDateTime])
+  @@index([bookingId])
+}
+
+model ShotListTemplate {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Template Info
+  name                  String
+  category              String                // wedding, portrait, product, etc.
+  description           String?
+  
+  // Items
+  isActive              Boolean               @default(true)
+  
+  // Metadata
+  tags                  String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  items                 ShotListTemplateItem[]
+  shotLists             ShotList[]
+  
+  @@index([studioId, isActive])
+}
+
+model ShotListTemplateItem {
+  id                    String                @id @default(cuid())
+  templateId            String
+  
+  // Item Details
+  name                  String
+  description           String?
+  category              String?
+  priority              Int                   @default(1) // 1-5
+  estimatedDuration     Int?                  // in minutes
+  
+  // Requirements
+  equipmentNeeded       String[]              @default([])
+  peopleNeeded          String[]              @default([])
+  
+  // Order
+  sortOrder             Int                   @default(0)
+  
+  // Metadata
+  referenceImages       String[]              @default([])
+  notes                 String?
+  
+  // Relations
+  template              ShotListTemplate      @relation(fields: [templateId], references: [id])
+  
+  @@index([templateId, sortOrder])
+}
+
+model Project {
+  id                    String                @id @default(cuid())
+  studioId              String
+  clientId              String
+  bookingId             String?               @unique
+  createdById           String
+  editorId              String?
+  
+  // Project Info
+  projectNumber         String                @unique
+  name                  String
+  description           String?
+  type                  String                // same as booking type
+  
+  // Status
+  status                ProjectStatus         @default(NOT_STARTED)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  // Deadlines
+  shootDeadline         DateTime?
+  editingDeadline       DateTime?
+  deliveryDeadline      DateTime?
+  
+  // Delivery
+  deliveryMethod        String?               // cloud, usb, print, etc.
+  deliveryNotes         String?
+  deliveredAt           DateTime?
+  
+  // Files
+  totalFiles            Int                   @default(0)
+  selectedFiles         Int                   @default(0)
+  editedFiles           Int                   @default(0)
+  
+  // Metadata
+  customFields          Json?
+  internalNotes         String?
+  clientNotes           String?
+  tags                  String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  createdBy             User                  @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  editor                User?                 @relation("ProjectEditor", fields: [editorId], references: [id])
+  assignments           ProjectAssignment[]
+  shotLists             ShotList[]
+  files                 File[]
+  reviews               Review[]
+  
+  @@index([studioId, status])
+  @@index([clientId])
+  @@index([projectNumber])
+}
+
+model ProjectAssignment {
+  id                    String                @id @default(cuid())
+  projectId             String
+  userId                String
+  
+  // Assignment
+  role                  String                // photographer, videographer, editor, etc.
+  assignedAt            DateTime              @default(now())
+  
+  // Time Tracking
+  estimatedHours        Decimal?
+  actualHours           Decimal               @default(0)
+  
+  // Metadata
+  notes                 String?
+  
+  // Relations
+  project               Project               @relation(fields: [projectId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@unique([projectId, userId, role])
+  @@index([userId])
+}
+
+model ShotList {
+  id                    String                @id @default(cuid())
+  projectId             String
+  templateId            String?
+  
+  // Info
+  name                  String
+  createdBy             String
+  
+  // Status
+  totalItems            Int                   @default(0)
+  completedItems        Int                   @default(0)
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  project               Project               @relation(fields: [projectId], references: [id])
+  template              ShotListTemplate?     @relation(fields: [templateId], references: [id])
+  items                 ShotListItem[]
+  
+  @@index([projectId])
+}
+
+model ShotListItem {
+  id                    String                @id @default(cuid())
+  shotListId            String
+  
+  // Item Details
+  name                  String
+  description           String?
+  category              String?
+  priority              Int                   @default(1)
+  
+  // Status
+  isCompleted           Boolean               @default(false)
+  completedAt           DateTime?
+  completedBy           String?
+  
+  // Requirements
+  equipmentNeeded       String[]              @default([])
+  peopleNeeded          String[]              @default([])
+  
+  // Order
+  sortOrder             Int                   @default(0)
+  
+  // Metadata
+  referenceImages       String[]              @default([])
+  capturedImages        String[]              @default([])
+  notes                 String?
+  
+  // Relations
+  shotList              ShotList              @relation(fields: [shotListId], references: [id])
+  
+  @@index([shotListId, sortOrder])
+}
+
+model File {
+  id                    String                @id @default(cuid())
+  projectId             String
+  clientId              String?
+  uploadedBy            String
+  
+  // File Info
+  filename              String
+  originalName          String
+  mimeType              String
+  size                  BigInt                // in bytes
+  type                  FileType
+  
+  // Storage
+  storageProvider       String                @default("s3") // s3, gcs, azure, local
+  storageKey            String
+  url                   String
+  thumbnailUrl          String?
+  
+  // Image/Video Metadata
+  width                 Int?
+  height                Int?
+  duration              Int?                  // in seconds for video
+  metadata              Json?                 // EXIF data, etc.
+  
+  // Status
+  isSelected            Boolean               @default(false)
+  isEdited              Boolean               @default(false)
+  isFavorite            Boolean               @default(false)
+  isDelivered           Boolean               @default(false)
+  
+  // Versions
+  version               Int                   @default(1)
+  parentId              String?
+  
+  // Watermark
+  hasWatermark          Boolean               @default(false)
+  watermarkUrl          String?
+  
+  // Metadata
+  tags                  String[]              @default([])
+  notes                 String?
+  uploadedAt            DateTime              @default(now())
+  editedAt              DateTime?
+  deliveredAt           DateTime?
+  
+  // Relations
+  project               Project               @relation(fields: [projectId], references: [id])
+  client                Client?               @relation(fields: [clientId], references: [id])
+  parent                File?                 @relation("FileVersions", fields: [parentId], references: [id])
+  versions              File[]                @relation("FileVersions")
+  
+  @@index([projectId, type])
+  @@index([clientId])
+  @@index([storageKey])
+}
+
+model Invoice {
+  id                    String                @id @default(cuid())
+  studioId              String
+  clientId              String
+  bookingId             String?               @unique
+  createdById           String
+  
+  // Invoice Details
+  invoiceNumber         String                @unique
+  
+  // Dates
+  issueDate             DateTime              @default(now())
+  dueDate               DateTime
+  
+  // Status
+  status                InvoiceStatus         @default(DRAFT)
+  sentAt                DateTime?
+  viewedAt              DateTime?
+  paidAt                DateTime?
+  
+  // Financial
+  subtotal              Decimal               @default(0)
+  discountPercentage    Decimal               @default(0)
+  discountAmount        Decimal               @default(0)
+  taxRate               Decimal               @default(0)
+  taxAmount             Decimal               @default(0)
+  total                 Decimal               @default(0)
+  currency              Currency              @default(USD)
+  
+  // Payment
+  amountPaid            Decimal               @default(0)
+  amountDue             Decimal               @default(0)
+  
+  // Terms
+  paymentTerms          String?
+  notes                 String?
+  
+  // Metadata
+  customFields          Json?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  createdBy             User                  @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  lineItems             InvoiceLineItem[]
+  payments              Payment[]
+  
+  @@index([studioId, status])
+  @@index([clientId])
+  @@index([invoiceNumber])
+}
+
+model InvoiceLineItem {
+  id                    String                @id @default(cuid())
+  invoiceId             String
+  
+  // Item Details
+  description           String
+  quantity              Decimal               @default(1)
+  unitPrice             Decimal
+  total                 Decimal
+  
+  // Tax
+  taxable               Boolean               @default(true)
+  taxRate               Decimal               @default(0)
+  taxAmount             Decimal               @default(0)
+  
+  // Order
+  sortOrder             Int                   @default(0)
+  
+  // Metadata
+  category              String?
+  notes                 String?
+  
+  // Relations
+  invoice               Invoice               @relation(fields: [invoiceId], references: [id])
+  
+  @@index([invoiceId, sortOrder])
+}
+
+model Payment {
+  id                    String                @id @default(cuid())
+  studioId              String
+  clientId              String
+  invoiceId             String?
+  bookingId             String?
+  
+  // Payment Details
+  paymentNumber         String                @unique
+  amount                Decimal
+  currency              Currency              @default(USD)
+  
+  // Gateway
+  gateway               PaymentGateway
+  gatewayTransactionId  String?
+  gatewayResponse       Json?
+  
+  // Status
+  status                PaymentStatus         @default(PENDING)
+  
+  // Card Details (if applicable)
+  cardLast4             String?
+  cardBrand             String?
+  
+  // Dates
+  processedAt           DateTime?
+  failedAt              DateTime?
+  refundedAt            DateTime?
+  
+  // Refund
+  refundAmount          Decimal               @default(0)
+  refundReason          String?
+  
+  // Metadata
+  description           String?
+  metadata              Json?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  invoice               Invoice?              @relation(fields: [invoiceId], references: [id])
+  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  
+  @@index([studioId, status])
+  @@index([clientId])
+  @@index([paymentNumber])
+}
+
+model Expense {
+  id                    String                @id @default(cuid())
+  studioId              String
+  userId                String
+  
+  // Expense Details
+  category              ExpenseCategory
+  description           String
+  amount                Decimal
+  currency              Currency              @default(USD)
+  
+  // Dates
+  expenseDate           DateTime
+  
+  // Receipt
+  receiptUrl            String?
+  
+  // Approval
+  isApproved            Boolean               @default(false)
+  approvedBy            String?
+  approvedAt            DateTime?
+  
+  // Reimbursement
+  isReimbursable        Boolean               @default(false)
+  isReimbursed          Boolean               @default(false)
+  reimbursedAt          DateTime?
+  
+  // Metadata
+  vendor                String?
+  projectReference      String?
+  notes                 String?
+  tags                  String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@index([studioId, category])
+  @@index([userId])
+}
+
+model EmailTemplate {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Template Info
+  name                  String
+  subject               String
+  type                  String                // booking_confirmation, invoice, etc.
+  
+  // Content
+  htmlContent           String
+  textContent           String?
+  
+  // Variables
+  availableVariables    String[]              @default([])
+  
+  // Status
+  isActive              Boolean               @default(true)
+  isDefault             Boolean               @default(false)
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  
+  @@unique([studioId, type, isDefault])
+  @@index([studioId, isActive])
+}
+
+model EmailCampaign {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Campaign Info
+  name                  String
+  subject               String
+  fromName              String
+  fromEmail             String
+  replyTo               String?
+  
+  // Content
+  htmlContent           String
+  textContent           String?
+  
+  // Targeting
+  audienceFilter        Json?                 // { tags: [], minBookings: 0, etc. }
+  testEmails            String[]              @default([])
+  
+  // Schedule
+  status                CampaignStatus        @default(DRAFT)
+  scheduledFor          DateTime?
+  sentAt                DateTime?
+  
+  // Stats
+  recipientCount        Int                   @default(0)
+  sentCount             Int                   @default(0)
+  openCount             Int                   @default(0)
+  clickCount            Int                   @default(0)
+  unsubscribeCount      Int                   @default(0)
+  bounceCount           Int                   @default(0)
+  
+  // Metadata
+  tags                  String[]              @default([])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  recipients            CampaignRecipient[]
+  
+  @@index([studioId, status])
+}
+
+model CampaignRecipient {
+  id                    String                @id @default(cuid())
+  campaignId            String
+  clientId              String
+  
+  // Status
+  sentAt                DateTime?
+  openedAt              DateTime?
+  clickedAt             DateTime?
+  unsubscribedAt        DateTime?
+  bouncedAt             DateTime?
+  
+  // Tracking
+  openCount             Int                   @default(0)
+  clickCount            Int                   @default(0)
+  
+  // Metadata
+  emailUsed             String
+  
+  // Relations
+  campaign              EmailCampaign         @relation(fields: [campaignId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  
+  @@unique([campaignId, clientId])
+  @@index([clientId])
+}
+
+model Notification {
+  id                    String                @id @default(cuid())
+  userId                String
+  
+  // Notification Details
+  type                  NotificationType
+  title                 String
+  message               String
+  
+  // Status
+  isRead                Boolean               @default(false)
+  readAt                DateTime?
+  
+  // Action
+  actionUrl             String?
+  actionLabel           String?
+  
+  // Related Entities
+  relatedId             String?               // ID of related entity
+  relatedType           String?               // booking, project, payment, etc.
+  
+  // Metadata
+  metadata              Json?
+  createdAt             DateTime              @default(now())
+  
+  // Relations
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model Review {
+  id                    String                @id @default(cuid())
+  projectId             String
+  clientId              String
+  
+  // Review Details
+  rating                Int                   // 1-5
+  comment               String?
+  
+  // Display
+  isPublic              Boolean               @default(false)
+  isApproved            Boolean               @default(false)
+  
+  // Response
+  responseText          String?
+  respondedAt           DateTime?
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  project               Project               @relation(fields: [projectId], references: [id])
+  client                Client                @relation(fields: [clientId], references: [id])
+  
+  @@unique([projectId, clientId])
+  @@index([clientId])
+}
+
+model CurrencyExchangeRate {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Currencies
+  fromCurrency          Currency
+  toCurrency            Currency
+  
+  // Rate
+  rate                  Decimal
+  
+  // Validity
+  validFrom             DateTime              @default(now())
+  validTo               DateTime?
+  
+  // Source
+  source                String                @default("manual") // manual, api, bank
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  
+  @@unique([studioId, fromCurrency, toCurrency, validFrom])
+  @@index([studioId])
+}
+
+model SystemSetting {
+  id                    String                @id @default(cuid())
+  studioId              String
+  
+  // Setting
+  key                   String
+  value                 Json
+  category              String
+  
+  // Metadata
+  description           String?
+  isPublic              Boolean               @default(false)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  
+  @@unique([studioId, key])
+  @@index([studioId, category])
+}
+
+model AuditLog {
+  id                    String                @id @default(cuid())
+  studioId              String
+  userId                String
+  
+  // Action Details
+  action                String                // create, update, delete, login, etc.
+  entity                String                // user, booking, invoice, etc.
+  entityId              String?
+  
+  // Changes
+  oldValues             Json?
+  newValues             Json?
+  
+  // Request Info
+  ipAddress             String?
+  userAgent             String?
+  
+  // Metadata
+  metadata              Json?
+  createdAt             DateTime              @default(now())
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  
+  @@index([studioId, entity])
+  @@index([userId])
+  @@index([createdAt])
+}

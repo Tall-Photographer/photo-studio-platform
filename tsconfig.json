@@ -1,0 +1,27 @@
+# Create root tsconfig
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/backend" },
+    { "path": "./packages/frontend" }
+  ]
+}
+EOF

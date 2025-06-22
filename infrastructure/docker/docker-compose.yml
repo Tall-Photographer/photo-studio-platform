@@ -1,0 +1,69 @@
+# Create Docker setup
+cat > infrastructure/docker/docker-compose.yml << 'EOF'
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shootlinks
+      POSTGRES_PASSWORD: shootlinks_dev
+      POSTGRES_DB: shootlinks_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shootlinks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../../packages/backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://shootlinks:shootlinks_dev@postgres:5432/shootlinks_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_REFRESH_SECRET: dev_jwt_refresh_secret_change_in_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../packages/backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ../../packages/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    depends_on:
+      - backend
+    volumes:
+      - ../../packages/frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+EOF

@@ -1,0 +1,516 @@
+#!/bin/bash
+
+# Create project root
+mkdir -p shootlinks-v3
+cd shootlinks-v3
+
+# Initialize monorepo structure
+mkdir -p packages/{backend,frontend,shared,mobile}
+mkdir -p infrastructure/{docker,kubernetes,scripts}
+mkdir -p docs/{api,user-guides,technical}
+
+# Backend structure
+cd packages/backend
+mkdir -p src/{auth,api,services,models,middleware,utils,config,database}
+mkdir -p src/api/{users,studios,clients,bookings,equipment,rooms,projects,invoices,payments}
+mkdir -p tests/{unit,integration,e2e}
+mkdir -p prisma/{migrations,seeds}
+
+# Frontend structure
+cd ../frontend
+mkdir -p src/{components,pages,features,hooks,utils,services,store,types}
+mkdir -p src/components/{common,layout,forms,tables,charts}
+mkdir -p src/features/{auth,dashboard,bookings,clients,equipment,projects,financial,settings}
+mkdir -p src/store/{slices,api}
+mkdir -p tests/{unit,integration,e2e}
+mkdir -p public/{images,fonts}
+
+# Shared structure
+cd ../shared
+mkdir -p src/{types,utils,constants,validators}
+
+# Mobile structure
+cd ../mobile
+mkdir -p src/{screens,components,navigation,services,utils,store}
+mkdir -p src/screens/{auth,dashboard,bookings,projects,clients}
+mkdir -p ios android
+
+# Return to root
+cd ../../..
+
+# Initialize git
+git init
+echo "node_modules/
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+dist/
+build/
+coverage/
+.idea/
+.vscode/
+*.swp
+*.swo
+.cache/
+.parcel-cache/
+.next/
+out/
+.nuxt/
+.turbo/
+.vercel/
+*.pem
+*.key
+*.crt
+.terraform/
+*.tfstate*
+.serverless/
+uploads/
+tmp/
+logs/" > .gitignore
+
+# Create root package.json for monorepo
+cat > package.json << 'EOF'
+{
+  "name": "shootlinks-v3",
+  "version": "3.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "prepare": "husky install",
+    "migrate": "npm run migrate --workspace=packages/backend",
+    "seed": "npm run seed --workspace=packages/backend"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+EOF
+
+# Create root tsconfig
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/backend" },
+    { "path": "./packages/frontend" }
+  ]
+}
+EOF
+
+# Create prettier config
+cat > .prettierrc << 'EOF'
+{
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 100,
+  "arrowParens": "always",
+  "endOfLine": "lf"
+}
+EOF
+
+# Create ESLint config
+cat > .eslintrc.js << 'EOF'
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'import', 'prettier'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript',
+    'prettier'
+  ],
+  env: {
+    node: true,
+    es6: true,
+  },
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+  },
+  rules: {
+    'prettier/prettier': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'import/order': [
+      'error',
+      {
+        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+        'newlines-between': 'always',
+        alphabetize: { order: 'asc', caseInsensitive: true },
+      },
+    ],
+  },
+  settings: {
+    'import/resolver': {
+      typescript: {},
+    },
+  },
+};
+EOF
+
+# Create Docker setup
+cat > infrastructure/docker/docker-compose.yml << 'EOF'
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shootlinks
+      POSTGRES_PASSWORD: shootlinks_dev
+      POSTGRES_DB: shootlinks_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shootlinks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../../packages/backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://shootlinks:shootlinks_dev@postgres:5432/shootlinks_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_REFRESH_SECRET: dev_jwt_refresh_secret_change_in_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../packages/backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ../../packages/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    depends_on:
+      - backend
+    volumes:
+      - ../../packages/frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+EOF
+
+# Create environment template
+cat > .env.example << 'EOF'
+# Database
+DATABASE_URL=postgresql://shootlinks:shootlinks_dev@localhost:5432/shootlinks_dev
+REDIS_URL=redis://localhost:6379
+
+# Authentication
+JWT_SECRET=your_jwt_secret_here
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_here
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+APPLE_CLIENT_ID=your_apple_client_id
+APPLE_TEAM_ID=your_apple_team_id
+APPLE_KEY_ID=your_apple_key_id
+APPLE_PRIVATE_KEY=your_apple_private_key
+
+# AWS S3
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=shootlinks-uploads
+
+# SendGrid
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=noreply@shootlinks.com
+
+# Stripe
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# PayPal
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+PAYPAL_MODE=sandbox
+
+# Application
+APP_URL=http://localhost:3000
+API_URL=http://localhost:3001
+NODE_ENV=development
+PORT=3001
+
+# Security
+BCRYPT_ROUNDS=10
+SESSION_SECRET=your_session_secret_here
+RATE_LIMIT_WINDOW=15
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Multi-factor Authentication
+MFA_APP_NAME=Shootlinks
+MFA_ISSUER=Shootlinks
+
+# Logging
+LOG_LEVEL=debug
+LOG_FORMAT=json
+
+# File Upload
+MAX_FILE_SIZE=52428800
+ALLOWED_FILE_TYPES=jpg,jpeg,png,gif,pdf,docx,xlsx
+
+# Email
+EMAIL_VERIFICATION_EXPIRES=24h
+PASSWORD_RESET_EXPIRES=1h
+
+# Currency Exchange API
+EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+EXCHANGE_RATE_UPDATE_INTERVAL=86400000
+EOF
+
+# Create GitHub Actions workflow
+mkdir -p .github/workflows
+cat > .github/workflows/ci.yml << 'EOF'
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: shootlinks
+          POSTGRES_PASSWORD: shootlinks_test
+          POSTGRES_DB: shootlinks_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linter
+      run: npm run lint
+    
+    - name: Run type check
+      run: npm run type-check
+    
+    - name: Run tests
+      run: npm test
+      env:
+        DATABASE_URL: postgresql://shootlinks:shootlinks_test@localhost:5432/shootlinks_test
+        JWT_SECRET: test_jwt_secret
+        NODE_ENV: test
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      if: success()
+EOF
+
+# Create README
+cat > README.md << 'EOF'
+# Shootlinks V3 - Photography Studio Management Platform
+
+## Overview
+A comprehensive, multi-tenant SaaS platform for managing photography studios with advanced features including booking management, financial tracking, project workflows, and client portals.
+
+## Tech Stack
+- **Frontend**: React 18+, TypeScript, Material-UI, Redux Toolkit + RTK Query
+- **Backend**: Node.js, Express.js, TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT + OAuth2 + 2FA
+- **File Storage**: AWS S3
+- **Payments**: Stripe + PayPal
+- **Email**: SendGrid
+- **Real-time**: Socket.IO
+
+## Features
+- Multi-tenant architecture with role-based access control
+- Advanced booking and scheduling system
+- Equipment and resource management
+- Financial management with multi-currency support
+- Project and workflow management
+- Client portal and galleries
+- Email marketing and automation
+- Business intelligence and analytics
+- Mobile applications (iOS/Android)
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 16+
+- Redis 7+
+- npm 9+
+
+### Installation
+```bash
+# Clone repository
+git clone https://github.com/your-org/shootlinks-v3.git
+cd shootlinks-v3
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Start development services
+docker-compose -f infrastructure/docker/docker-compose.yml up -d
+
+# Run database migrations
+npm run migrate
+
+# Seed database
+npm run seed
+
+# Start development servers
+npm run dev
+```
+
+### Access
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- API Documentation: http://localhost:3001/api-docs
+
+## Project Structure
+```
+shootlinks-v3/
+├── packages/
+│   ├── backend/         # Node.js API server
+│   ├── frontend/        # React web application
+│   ├── shared/          # Shared types and utilities
+│   └── mobile/          # React Native mobile app
+├── infrastructure/      # Docker, K8s, deployment configs
+├── docs/                # Documentation
+└── scripts/             # Utility scripts
+```
+
+## Development
+
+### Commands
+```bash
+npm run dev              # Start all services in development
+npm run build            # Build all packages
+npm run test             # Run all tests
+npm run lint             # Run linter
+npm run format           # Format code
+npm run migrate          # Run database migrations
+npm run seed             # Seed database
+```
+
+### Testing
+```bash
+npm run test:unit        # Unit tests
+npm run test:integration # Integration tests
+npm run test:e2e         # End-to-end tests
+npm run test:coverage    # Generate coverage report
+```
+
+## Deployment
+See [deployment guide](docs/technical/deployment.md) for production deployment instructions.
+
+## License
+Copyright (c) 2025 Shootlinks. All rights reserved.
+EOF
+
+echo "✅ Project structure created successfully!"
+echo "📁 Total directories created: $(find shootlinks-v3 -type d | wc -l)"
+echo "📄 Configuration files created"
+echo ""
+echo "Next steps:"
+echo "1. cd shootlinks-v3"
+echo "2. npm install"
+echo "3. Set up environment variables in .env"
+echo "4. Start development with: npm run dev"
