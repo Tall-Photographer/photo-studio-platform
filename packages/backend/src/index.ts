@@ -1,4 +1,6 @@
-// packages/backend/src/index.ts
+// File: packages/backend/src/index.ts
+// Main server entry point with Supabase integration
+
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -66,6 +68,9 @@ class Server {
   }
 
   private setupMiddleware(): void {
+    // Trust proxy for deployment behind load balancers
+    this.app.set('trust proxy', 1);
+
     // Security middleware
     this.app.use(helmet({
       crossOriginEmbedderPolicy: false,
@@ -73,15 +78,27 @@ class Server {
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", "data:", "https:"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:", "*.supabase.co"],
+          connectSrc: ["'self'", "*.supabase.co"],
+          fontSrc: ["'self'", "data:"],
         },
       },
     }));
 
     // CORS configuration
+    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',');
     this.app.use(cors({
-      origin: (process.env.CORS_ORIGINS || 'http://localhost:3000').split(','),
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -89,7 +106,15 @@ class Server {
 
     // Compression and logging
     this.app.use(compression());
-    this.app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+    
+    // Morgan logging (only in development and production, not in tests)
+    if (process.env.NODE_ENV !== 'test') {
+      this.app.use(morgan('combined', { 
+        stream: { 
+          write: (message) => logger.info(message.trim()) 
+        } 
+      }));
+    }
 
     // Body parsing
     this.app.use(express.json({ limit: '50mb' }));
@@ -105,7 +130,39 @@ class Server {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',
+        version: '3.0.0',
+        database: 'connected', // Will be updated in actual health check
       });
+    });
+
+    // Detailed health check endpoint
+    this.app.get('/health/detailed', async (req: Request, res: Response) => {
+      try {
+        const dbHealth = await database.healthCheck();
+        const cacheHealth = cache.isReady();
+        
+        const health = {
+          status: dbHealth && cacheHealth ? 'healthy' : 'unhealthy',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          environment: process.env.NODE_ENV || 'development',
+          version: '3.0.0',
+          services: {
+            database: dbHealth ? 'connected' : 'disconnected',
+            cache: cacheHealth ? 'connected' : 'disconnected',
+            supabase: 'connected', // Supabase is checked during database health check
+          },
+        };
+
+        res.status(dbHealth && cacheHealth ? 200 : 503).json(health);
+      } catch (error) {
+        logger.error('Health check error:', error);
+        res.status(503).json({
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          error: 'Health check failed',
+        });
+      }
     });
   }
 
@@ -126,55 +183,97 @@ class Server {
     this.app.use(`${apiPrefix}/invoices`, authMiddleware, invoiceRoutes);
     this.app.use(`${apiPrefix}/payments`, authMiddleware, paymentRoutes);
 
-    // API documentation
-    if (process.env.NODE_ENV === 'development') {
+    // API documentation (only in development)
+    if (process.env.NODE_ENV === 'development' && process.env.ENABLE_API_DOCS === 'true') {
       this.setupApiDocs();
     }
 
-    // 404 handler
-    this.app.use('*', (req: Request, res: Response) => {
+    // API info endpoint
+    this.app.get(`${apiPrefix}`, (req: Request, res: Response) => {
+      res.json({
+        name: 'Shootlinks V3 API',
+        version: '3.0.0',
+        description: 'Photography Studio Management Platform API',
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString(),
+        documentation: process.env.NODE_ENV === 'development' ? '/api-docs' : 'Contact administrator',
+      });
+    });
+
+    // 404 handler for API routes
+    this.app.use(`${apiPrefix}/*`, (req: Request, res: Response) => {
       res.status(404).json({
         success: false,
         message: 'API endpoint not found',
         path: req.originalUrl,
+        method: req.method,
+      });
+    });
+
+    // Root endpoint
+    this.app.get('/', (req: Request, res: Response) => {
+      res.json({
+        message: 'Shootlinks V3 API Server',
+        version: '3.0.0',
+        status: 'running',
+        api: `${req.protocol}://${req.get('host')}/api/v1`,
+        health: `${req.protocol}://${req.get('host')}/health`,
       });
     });
   }
 
   private setupApiDocs(): void {
-    // Import Swagger dependencies dynamically for development only
-    const swaggerJsdoc = require('swagger-jsdoc');
-    const swaggerUi = require('swagger-ui-express');
+    try {
+      // Import Swagger dependencies dynamically for development only
+      const swaggerJsdoc = require('swagger-jsdoc');
+      const swaggerUi = require('swagger-ui-express');
 
-    const options = {
-      definition: {
-        openapi: '3.0.0',
-        info: {
-          title: 'Shootlinks V3 API',
-          version: '3.0.0',
-          description: 'Photography Studio Management Platform API',
-        },
-        servers: [
-          {
-            url: process.env.BACKEND_URL || 'http://localhost:3001',
-            description: 'Development server',
-          },
-        ],
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type: 'http',
-              scheme: 'bearer',
-              bearerFormat: 'JWT',
+      const options = {
+        definition: {
+          openapi: '3.0.0',
+          info: {
+            title: 'Shootlinks V3 API',
+            version: '3.0.0',
+            description: 'Photography Studio Management Platform API with Supabase backend',
+            contact: {
+              name: 'Shootlinks Support',
+              email: 'support@shootlinks.com',
             },
           },
+          servers: [
+            {
+              url: process.env.BACKEND_URL || 'http://localhost:3001',
+              description: 'Development server',
+            },
+          ],
+          components: {
+            securitySchemes: {
+              bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+              },
+            },
+          },
+          security: [
+            {
+              bearerAuth: [],
+            },
+          ],
         },
-      },
-      apis: ['./src/api/**/*.routes.ts', './src/api/**/*.ts'],
-    };
+        apis: ['./src/api/**/*.routes.ts', './src/api/**/*.ts'],
+      };
 
-    const specs = swaggerJsdoc(options);
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+      const specs = swaggerJsdoc(options);
+      this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'Shootlinks V3 API Documentation',
+      }));
+
+      logger.info('📖 API documentation enabled at /api-docs');
+    } catch (error) {
+      logger.warn('Failed to setup API documentation:', error);
+    }
   }
 
   private setupErrorHandling(): void {
@@ -183,51 +282,79 @@ class Server {
 
   private setupSocketHandlers(): void {
     this.io.on('connection', (socket) => {
-      logger.info(`Socket connected: ${socket.id}`);
+      logger.debug(`Socket connected: ${socket.id}`);
 
       // Join studio room for real-time updates
       socket.on('join:studio', (studioId: string) => {
-        socket.join(`studio:${studioId}`);
-        logger.debug(`Socket ${socket.id} joined studio room: ${studioId}`);
+        if (studioId) {
+          socket.join(`studio:${studioId}`);
+          logger.debug(`Socket ${socket.id} joined studio room: ${studioId}`);
+        }
       });
 
       // Handle booking updates
       socket.on('booking:update', (data) => {
-        socket.to(`studio:${data.studioId}`).emit('booking:updated', data);
+        if (data?.studioId) {
+          socket.to(`studio:${data.studioId}`).emit('booking:updated', data);
+        }
       });
 
       // Handle project updates
       socket.on('project:update', (data) => {
-        socket.to(`studio:${data.studioId}`).emit('project:updated', data);
+        if (data?.studioId) {
+          socket.to(`studio:${data.studioId}`).emit('project:updated', data);
+        }
       });
 
       // Handle notifications
       socket.on('notification:send', (data) => {
-        socket.to(`studio:${data.studioId}`).emit('notification:received', data);
+        if (data?.studioId) {
+          socket.to(`studio:${data.studioId}`).emit('notification:received', data);
+        }
+      });
+
+      // Handle file upload progress
+      socket.on('file:upload:progress', (data) => {
+        if (data?.studioId) {
+          socket.to(`studio:${data.studioId}`).emit('file:upload:progress', data);
+        }
       });
 
       socket.on('disconnect', () => {
-        logger.info(`Socket disconnected: ${socket.id}`);
+        logger.debug(`Socket disconnected: ${socket.id}`);
+      });
+
+      socket.on('error', (error) => {
+        logger.error(`Socket error for ${socket.id}:`, error);
       });
     });
   }
 
   public async start(): Promise<void> {
     try {
-      // Connect to database
+      // Connect to database first
       await database.connect();
       logger.info('✅ Database connected successfully');
 
-      // Connect to cache
-      await cache.connect();
-      logger.info('✅ Cache connected successfully');
+      // Connect to cache (optional)
+      try {
+        await cache.connect();
+        logger.info('✅ Cache connected successfully');
+      } catch (cacheError) {
+        logger.warn('⚠️ Cache connection failed, continuing without cache:', cacheError);
+      }
 
       // Start server
       this.httpServer.listen(this.port, () => {
         logger.info(`🚀 Server running on port ${this.port}`);
-        logger.info(`📖 API Documentation: http://localhost:${this.port}/api-docs`);
-        logger.info(`🔍 Health Check: http://localhost:${this.port}/health`);
         logger.info(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+        logger.info(`📍 API Base URL: http://localhost:${this.port}/api/v1`);
+        
+        if (process.env.NODE_ENV === 'development') {
+          logger.info(`📖 API Documentation: http://localhost:${this.port}/api-docs`);
+        }
+        
+        logger.info(`🔍 Health Check: http://localhost:${this.port}/health`);
       });
 
       // Graceful shutdown handling
@@ -253,13 +380,17 @@ class Server {
         logger.info('✅ Socket.IO server closed');
       });
 
-      // Disconnect from database
-      await database.disconnect();
-      logger.info('✅ Database disconnected');
+      try {
+        // Disconnect from database
+        await database.disconnect();
+        logger.info('✅ Database disconnected');
 
-      // Disconnect from cache
-      await cache.disconnect();
-      logger.info('✅ Cache disconnected');
+        // Disconnect from cache
+        await cache.disconnect();
+        logger.info('✅ Cache disconnected');
+      } catch (error) {
+        logger.error('❌ Error during graceful shutdown:', error);
+      }
 
       logger.info('✅ Graceful shutdown completed');
       process.exit(0);

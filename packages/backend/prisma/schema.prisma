@@ -1,14 +1,16 @@
-// packages/backend/prisma/schema.prisma
-// This is your Prisma schema file
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+// File: packages/backend/prisma/schema.prisma
+// Supabase-optimized Prisma schema
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [uuidOssp(map: "uuid-ossp")]
 }
 
 // Enums
@@ -86,9 +88,18 @@ enum Currency {
   SAR
 }
 
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  REPAIR
+  RETIRED
+  LOST
+}
+
 // Core Models
 model Studio {
-  id                    String                @id @default(cuid())
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                  String
   slug                  String                @unique
   logo                  String?
@@ -110,7 +121,7 @@ model Studio {
   
   // Financial Settings
   defaultCurrency       Currency              @default(USD)
-  taxRate               Decimal               @default(0)
+  taxRate               Decimal               @default(0) @db.Decimal(5,4)
   taxId                 String?
   
   // Features & Limits
@@ -145,11 +156,15 @@ model Studio {
   auditLogs             AuditLog[]
   systemSettings        SystemSetting[]
   currencyRates         CurrencyExchangeRate[]
+  
+  @@index([slug])
+  @@index([subscriptionStatus])
+  @@map("studios")
 }
 
 model User {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Basic Info
   email                 String                @unique
@@ -160,6 +175,7 @@ model User {
   
   // Contact Info
   phone                 String?
+  avatar                String?
   
   // Authentication
   emailVerified         Boolean               @default(false)
@@ -182,7 +198,7 @@ model User {
   loginCount            Int                   @default(0)
   
   // Professional Info
-  hourlyRate            Decimal?
+  hourlyRate            Decimal?              @db.Decimal(10,2)
   skills                String[]              @default([])
   specializations       String[]              @default([])
   
@@ -192,7 +208,7 @@ model User {
   deletedAt             DateTime?
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   sessions              UserSession[]
   bookingAssignments    BookingAssignment[]
   projectAssignments    ProjectAssignment[]
@@ -207,11 +223,12 @@ model User {
   
   @@index([studioId, role])
   @@index([email])
+  @@map("users")
 }
 
 model UserSession {
-  id                    String                @id @default(cuid())
-  userId                String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String                @db.Uuid
   token                 String                @unique
   refreshToken          String                @unique
   
@@ -230,16 +247,18 @@ model UserSession {
   lastActivityAt        DateTime              @default(now())
   
   // Relations
-  user                  User                  @relation(fields: [userId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
   @@index([token])
   @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("user_sessions")
 }
 
 model Client {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Contact Info
   firstName             String
@@ -261,9 +280,9 @@ model Client {
   tags                  String[]              @default([])
   
   // Business Info
-  totalSpent            Decimal               @default(0)
+  totalSpent            Decimal               @default(0) @db.Decimal(10,2)
   totalBookings         Int                   @default(0)
-  averageRating         Decimal?
+  averageRating         Decimal?              @db.Decimal(3,2)
   loyaltyPoints         Int                   @default(0)
   
   // Marketing
@@ -272,26 +291,27 @@ model Client {
   smsOptIn              Boolean               @default(false)
   
   // Metadata
-  source                String?               // referral, website, social, etc.
+  source                String?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
   deletedAt             DateTime?
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   bookings              Booking[]
   invoices              Invoice[]
   payments              Payment[]
   
   @@index([studioId])
   @@index([email])
+  @@map("clients")
 }
 
 model Booking {
-  id                    String                @id @default(cuid())
-  studioId              String
-  clientId              String
-  createdById           String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  clientId              String                @db.Uuid
+  createdById           String                @db.Uuid
   
   // Booking Details
   bookingNumber         String                @unique
@@ -303,24 +323,23 @@ model Booking {
   startDate             DateTime
   endDate               DateTime
   duration              Int                   // in minutes
-  setupTime             Int                   @default(0) // in minutes
-  breakdownTime         Int                   @default(0) // in minutes
+  setupTime             Int                   @default(0)
+  breakdownTime         Int                   @default(0)
   
   // Location
   location              String?
   address               String?
   
   // Pricing
-  basePrice             Decimal
+  basePrice             Decimal               @db.Decimal(10,2)
   currency              Currency              @default(USD)
-  taxAmount             Decimal               @default(0)
-  discountAmount        Decimal               @default(0)
-  totalAmount           Decimal
+  taxAmount             Decimal               @default(0) @db.Decimal(10,2)
+  discountAmount        Decimal               @default(0) @db.Decimal(10,2)
+  totalAmount           Decimal               @db.Decimal(10,2)
   
   // Requirements
   equipmentNeeded       String[]              @default([])
   specialRequirements   String?
-  shotListId            String?
   
   // Metadata
   notes                 String?
@@ -334,8 +353,8 @@ model Booking {
   deletedAt             DateTime?
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  client                Client                @relation(fields: [clientId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client                Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdBy             User                  @relation("BookingCreatedBy", fields: [createdById], references: [id])
   assignments           BookingAssignment[]
   roomAssignments       RoomAssignment[]
@@ -348,18 +367,19 @@ model Booking {
   @@index([clientId])
   @@index([startDate])
   @@index([bookingNumber])
+  @@map("bookings")
 }
 
 model BookingAssignment {
-  id                    String                @id @default(cuid())
-  bookingId             String
-  userId                String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId             String                @db.Uuid
+  userId                String                @db.Uuid
   
   // Assignment Details
-  role                  String                // photographer, assistant, etc.
-  rate                  Decimal?
+  role                  String
+  rate                  Decimal?              @db.Decimal(10,2)
   currency              Currency              @default(USD)
-  hours                 Decimal?
+  hours                 Decimal?              @db.Decimal(5,2)
   
   // Status
   isConfirmed           Boolean               @default(false)
@@ -371,20 +391,243 @@ model BookingAssignment {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  project               Project               @relation(fields: [projectId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
+  booking               Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([bookingId, userId])
+  @@index([bookingId])
+  @@index([userId])
+  @@map("booking_assignments")
+}
+
+model Equipment {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  
+  // Equipment Details
+  name                  String
+  description           String?
+  category              String
+  brand                 String?
+  model                 String?
+  serialNumber          String?
+  
+  // Tracking
+  qrCode                String?               @unique
+  location              String?
+  status                EquipmentStatus       @default(AVAILABLE)
+  
+  // Financial
+  purchasePrice         Decimal?              @db.Decimal(10,2)
+  currency              Currency              @default(USD)
+  purchaseDate          DateTime?
+  warrantyExpires       DateTime?
+  
+  // Maintenance
+  lastMaintenanceDate   DateTime?
+  nextMaintenanceDate   DateTime?
+  maintenanceNotes      String?
+  
+  // Usage
+  totalUsageHours       Int                   @default(0)
+  
+  // Metadata
+  notes                 String?
+  tags                  String[]              @default([])
+  images                String[]              @default([])
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  assignments           EquipmentAssignment[]
+  
+  @@index([studioId, category])
+  @@index([status])
+  @@index([qrCode])
+  @@map("equipment")
+}
+
+model EquipmentAssignment {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  equipmentId           String                @db.Uuid
+  userId                String                @db.Uuid
+  bookingId             String?               @db.Uuid
+  
+  // Assignment Details
+  checkedOutAt          DateTime              @default(now())
+  checkedInAt           DateTime?
+  expectedReturnDate    DateTime?
+  
+  // Condition
+  conditionOut          String?
+  conditionIn           String?
+  notes                 String?
+  
+  // Metadata
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  equipment             Equipment             @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking               Booking?              @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  
+  @@index([equipmentId])
+  @@index([userId])
+  @@index([bookingId])
+  @@map("equipment_assignments")
+}
+
+model Room {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  
+  // Room Details
+  name                  String
+  description           String?
+  type                  String
+  
+  // Specifications
+  dimensions            String?
+  capacity              Int?
+  features              String[]              @default([])
+  
+  // Pricing
+  hourlyRate            Decimal?              @db.Decimal(10,2)
+  currency              Currency              @default(USD)
+  
+  // Availability
+  isAvailable           Boolean               @default(true)
+  
+  // Metadata
+  notes                 String?
+  images                String[]              @default([])
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  assignments           RoomAssignment[]
+  
+  @@index([studioId])
+  @@map("rooms")
+}
+
+model RoomAssignment {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId                String                @db.Uuid
+  bookingId             String                @db.Uuid
+  
+  // Assignment Details
+  startTime             DateTime
+  endTime               DateTime
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  room                  Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  booking               Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  @@index([roomId])
+  @@index([bookingId])
+  @@map("room_assignments")
+}
+
+model Project {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  bookingId             String?               @db.Uuid
+  createdById           String                @db.Uuid
+  editorId              String?               @db.Uuid
+  
+  // Project Details
+  projectNumber         String                @unique
+  title                 String
+  description           String?
+  status                ProjectStatus         @default(NOT_STARTED)
+  
+  // Deliverables
+  deliveryDate          DateTime?
+  deliveryMethod        String?
+  
+  // File Management
+  totalFiles            Int                   @default(0)
+  processedFiles        Int                   @default(0)
+  approvedFiles         Int                   @default(0)
+  
+  // Progress Tracking
+  progressPercentage    Int                   @default(0)
+  
+  // Client Communication
+  clientApprovalRequired Boolean              @default(false)
+  clientApprovedAt      DateTime?
+  clientFeedback        String?
+  
+  // Metadata
+  notes                 String?
+  internalNotes         String?
+  tags                  String[]              @default([])
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
+  
+  // Relations
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  booking               Booking?              @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  createdBy             User                  @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  editor                User?                 @relation("ProjectEditor", fields: [editorId], references: [id])
+  assignments           ProjectAssignment[]
+  files                 File[]
+  
+  @@index([studioId, status])
+  @@index([bookingId])
+  @@index([projectNumber])
+  @@map("projects")
+}
+
+model ProjectAssignment {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId             String                @db.Uuid
+  userId                String                @db.Uuid
+  
+  // Assignment Details
+  role                  String
+  assignedAt            DateTime              @default(now())
+  
+  // Status
+  isCompleted           Boolean               @default(false)
+  completedAt           DateTime?
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  // Relations
+  project               Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@unique([projectId, userId])
   @@index([projectId])
   @@index([userId])
+  @@map("project_assignments")
 }
 
 model Invoice {
-  id                    String                @id @default(cuid())
-  studioId              String
-  clientId              String
-  bookingId             String?
-  createdById           String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  clientId              String                @db.Uuid
+  bookingId             String?               @db.Uuid
+  createdById           String                @db.Uuid
   
   // Invoice Details
   invoiceNumber         String                @unique
@@ -398,16 +641,16 @@ model Invoice {
   paidDate              DateTime?
   
   // Financial
-  subtotal              Decimal
-  taxAmount             Decimal               @default(0)
-  discountAmount        Decimal               @default(0)
-  totalAmount           Decimal
-  paidAmount            Decimal               @default(0)
-  balanceAmount         Decimal
+  subtotal              Decimal               @db.Decimal(10,2)
+  taxAmount             Decimal               @default(0) @db.Decimal(10,2)
+  discountAmount        Decimal               @default(0) @db.Decimal(10,2)
+  totalAmount           Decimal               @db.Decimal(10,2)
+  paidAmount            Decimal               @default(0) @db.Decimal(10,2)
+  balanceAmount         Decimal               @db.Decimal(10,2)
   currency              Currency              @default(USD)
   
   // Payment Terms
-  paymentTerms          String?               // "Net 30", "Due on Receipt", etc.
+  paymentTerms          String?
   
   // Metadata
   notes                 String?
@@ -418,9 +661,9 @@ model Invoice {
   deletedAt             DateTime?
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  client                Client                @relation(fields: [clientId], references: [id])
-  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client                Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  booking               Booking?              @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   createdBy             User                  @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
   lineItems             InvoiceLineItem[]
   payments              Payment[]
@@ -428,37 +671,39 @@ model Invoice {
   @@index([studioId, status])
   @@index([clientId])
   @@index([invoiceNumber])
+  @@map("invoices")
 }
 
 model InvoiceLineItem {
-  id                    String                @id @default(cuid())
-  invoiceId             String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId             String                @db.Uuid
   
   // Line Item Details
   description           String
-  quantity              Decimal
-  unitPrice             Decimal
-  totalPrice            Decimal
+  quantity              Decimal               @db.Decimal(10,2)
+  unitPrice             Decimal               @db.Decimal(10,2)
+  totalPrice            Decimal               @db.Decimal(10,2)
   
   // Metadata
   sortOrder             Int                   @default(0)
   
   // Relations
-  invoice               Invoice               @relation(fields: [invoiceId], references: [id])
+  invoice               Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   
   @@index([invoiceId])
+  @@map("invoice_line_items")
 }
 
 model Payment {
-  id                    String                @id @default(cuid())
-  studioId              String
-  clientId              String
-  invoiceId             String?
-  bookingId             String?
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  clientId              String                @db.Uuid
+  invoiceId             String?               @db.Uuid
+  bookingId             String?               @db.Uuid
   
   // Payment Details
   paymentNumber         String                @unique
-  amount                Decimal
+  amount                Decimal               @db.Decimal(10,2)
   currency              Currency              @default(USD)
   status                PaymentStatus         @default(PENDING)
   gateway               PaymentGateway        @default(MANUAL)
@@ -468,7 +713,7 @@ model Payment {
   gatewayResponse       Json?
   
   // Payment Method
-  paymentMethod         String?               // card, bank_transfer, cash, etc.
+  paymentMethod         String?
   
   // Dates
   paymentDate           DateTime              @default(now())
@@ -481,25 +726,26 @@ model Payment {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  client                Client                @relation(fields: [clientId], references: [id])
-  invoice               Invoice?              @relation(fields: [invoiceId], references: [id])
-  booking               Booking?              @relation(fields: [bookingId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client                Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoice               Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  booking               Booking?              @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   
   @@index([studioId, status])
   @@index([clientId])
   @@index([paymentNumber])
+  @@map("payments")
 }
 
 model Expense {
-  id                    String                @id @default(cuid())
-  studioId              String
-  userId                String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  userId                String                @db.Uuid
   
   // Expense Details
   category              String
   description           String
-  amount                Decimal
+  amount                Decimal               @db.Decimal(10,2)
   currency              Currency              @default(USD)
   
   // Dates
@@ -527,28 +773,29 @@ model Expense {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([studioId, category])
   @@index([userId])
+  @@map("expenses")
 }
 
 model EmailTemplate {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Template Info
   name                  String
   subject               String
-  type                  String                // booking_confirmation, invoice, etc.
+  type                  String
   
   // Content
   htmlContent           String
   textContent           String?
   
   // Template Variables
-  variables             Json?                 // available variables for this template
+  variables             Json?
   
   // Usage
   isActive              Boolean               @default(true)
@@ -559,26 +806,27 @@ model EmailTemplate {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   
   @@index([studioId, type])
+  @@map("email_templates")
 }
 
 model EmailCampaign {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Campaign Details
   name                  String
   subject               String
-  status                String                @default("draft") // draft, scheduled, sending, sent, cancelled
+  status                String                @default("draft")
   
   // Content
   htmlContent           String
   textContent           String?
   
   // Targeting
-  targetAudience        Json?                 // filtering criteria
+  targetAudience        Json?
   
   // Scheduling
   scheduledAt           DateTime?
@@ -598,19 +846,20 @@ model EmailCampaign {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   recipients            CampaignRecipient[]
   
   @@index([studioId, status])
+  @@map("email_campaigns")
 }
 
 model CampaignRecipient {
-  id                    String                @id @default(cuid())
-  campaignId            String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId            String                @db.Uuid
   email                 String
   
   // Status
-  status                String                @default("pending") // pending, sent, delivered, opened, clicked, bounced, unsubscribed
+  status                String                @default("pending")
   
   // Tracking
   sentAt                DateTime?
@@ -626,19 +875,20 @@ model CampaignRecipient {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  campaign              EmailCampaign         @relation(fields: [campaignId], references: [id])
+  campaign              EmailCampaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   
   @@index([campaignId])
   @@index([email])
+  @@map("campaign_recipients")
 }
 
 model Notification {
-  id                    String                @id @default(cuid())
-  studioId              String
-  userId                String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  userId                String                @db.Uuid
   
   // Notification Details
-  type                  String                // booking_reminder, payment_received, etc.
+  type                  String
   title                 String
   message               String
   
@@ -655,17 +905,18 @@ model Notification {
   createdAt             DateTime              @default(now())
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([studioId, userId])
   @@index([isRead])
+  @@map("notifications")
 }
 
 model File {
-  id                    String                @id @default(cuid())
-  studioId              String
-  projectId             String?
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  projectId             String?               @db.Uuid
   
   // File Details
   filename              String
@@ -673,13 +924,14 @@ model File {
   mimeType              String
   size                  Int
   
-  // Storage
+  // Storage (Supabase Storage)
+  supabasePath          String?               // Path in Supabase Storage
   url                   String
   thumbnailUrl          String?
   
   // File Type
-  type                  String                // image, video, document, etc.
-  category              String?               // raw, edited, final, etc.
+  type                  String
+  category              String?
   
   // Metadata
   metadata              Json?
@@ -702,43 +954,45 @@ model File {
   deletedAt             DateTime?
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  project               Project?              @relation(fields: [projectId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  project               Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
   
   @@index([studioId, type])
   @@index([projectId])
+  @@map("files")
 }
 
 model CurrencyExchangeRate {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Currency Pair
   fromCurrency          Currency
   toCurrency            Currency
   
   // Rate
-  rate                  Decimal
+  rate                  Decimal               @db.Decimal(10,6)
   validFrom             DateTime
   validTo               DateTime?
   
   // Source
-  source                String                @default("manual") // manual, api, bank
+  source                String                @default("manual")
   
   // Metadata
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   
   @@unique([studioId, fromCurrency, toCurrency, validFrom])
   @@index([studioId])
+  @@map("currency_exchange_rates")
 }
 
 model SystemSetting {
-  id                    String                @id @default(cuid())
-  studioId              String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
   
   // Setting
   key                   String
@@ -752,20 +1006,21 @@ model SystemSetting {
   updatedAt             DateTime              @updatedAt
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
   
   @@unique([studioId, key])
   @@index([studioId, category])
+  @@map("system_settings")
 }
 
 model AuditLog {
-  id                    String                @id @default(cuid())
-  studioId              String
-  userId                String
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studioId              String                @db.Uuid
+  userId                String                @db.Uuid
   
   // Action Details
-  action                String                // create, update, delete, login, etc.
-  entity                String                // user, booking, invoice, etc.
+  action                String
+  entity                String
   entityId              String?
   
   // Changes
@@ -781,226 +1036,11 @@ model AuditLog {
   createdAt             DateTime              @default(now())
   
   // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
+  studio                Studio                @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([studioId, entity])
   @@index([userId])
   @@index([createdAt])
-}datedAt
-  
-  // Relations
-  booking               Booking               @relation(fields: [bookingId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
-  
-  @@unique([bookingId, userId])
-  @@index([bookingId])
-  @@index([userId])
+  @@map("audit_logs")
 }
-
-model Equipment {
-  id                    String                @id @default(cuid())
-  studioId              String
-  
-  // Equipment Details
-  name                  String
-  description           String?
-  category              String
-  brand                 String?
-  model                 String?
-  serialNumber          String?
-  
-  // Tracking
-  qrCode                String?               @unique
-  location              String?
-  status                String                @default("available") // available, in_use, maintenance, retired
-  
-  // Financial
-  purchasePrice         Decimal?
-  currency              Currency              @default(USD)
-  purchaseDate          DateTime?
-  warrantyExpires       DateTime?
-  
-  // Maintenance
-  lastMaintenanceDate   DateTime?
-  nextMaintenanceDate   DateTime?
-  maintenanceNotes      String?
-  
-  // Usage
-  totalUsageHours       Int                   @default(0)
-  
-  // Metadata
-  notes                 String?
-  tags                  String[]              @default([])
-  images                String[]              @default([])
-  
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  deletedAt             DateTime?
-  
-  // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  assignments           EquipmentAssignment[]
-  
-  @@index([studioId, category])
-  @@index([status])
-  @@index([qrCode])
-}
-
-model EquipmentAssignment {
-  id                    String                @id @default(cuid())
-  equipmentId           String
-  userId                String
-  bookingId             String?
-  
-  // Assignment Details
-  checkedOutAt          DateTime              @default(now())
-  checkedInAt           DateTime?
-  expectedReturnDate    DateTime?
-  
-  // Condition
-  conditionOut          String?               // excellent, good, fair, poor
-  conditionIn           String?
-  notes                 String?
-  
-  // Metadata
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  
-  // Relations
-  equipment             Equipment             @relation(fields: [equipmentId], references: [id])
-  user                  User                  @relation(fields: [userId], references: [id])
-  booking               Booking?              @relation(fields: [bookingId], references: [id])
-  
-  @@index([equipmentId])
-  @@index([userId])
-  @@index([bookingId])
-}
-
-model Room {
-  id                    String                @id @default(cuid())
-  studioId              String
-  
-  // Room Details
-  name                  String
-  description           String?
-  type                  String                // studio, office, storage, etc.
-  
-  // Specifications
-  dimensions            String?               // "20x15x10 feet"
-  capacity              Int?                  // max people
-  features              String[]              @default([]) // lighting, backdrop, etc.
-  
-  // Pricing
-  hourlyRate            Decimal?
-  currency              Currency              @default(USD)
-  
-  // Availability
-  isAvailable           Boolean               @default(true)
-  
-  // Metadata
-  notes                 String?
-  images                String[]              @default([])
-  
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  deletedAt             DateTime?
-  
-  // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  assignments           RoomAssignment[]
-  
-  @@index([studioId])
-}
-
-model RoomAssignment {
-  id                    String                @id @default(cuid())
-  roomId                String
-  bookingId             String
-  
-  // Assignment Details
-  startTime             DateTime
-  endTime               DateTime
-  
-  // Metadata
-  notes                 String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  
-  // Relations
-  room                  Room                  @relation(fields: [roomId], references: [id])
-  booking               Booking               @relation(fields: [bookingId], references: [id])
-  
-  @@index([roomId])
-  @@index([bookingId])
-}
-
-model Project {
-  id                    String                @id @default(cuid())
-  studioId              String
-  bookingId             String?
-  createdById           String
-  editorId              String?
-  
-  // Project Details
-  projectNumber         String                @unique
-  title                 String
-  description           String?
-  status                ProjectStatus         @default(NOT_STARTED)
-  
-  // Deliverables
-  deliveryDate          DateTime?
-  deliveryMethod        String?               // email, cloud, physical
-  
-  // File Management
-  totalFiles            Int                   @default(0)
-  processedFiles        Int                   @default(0)
-  approvedFiles         Int                   @default(0)
-  
-  // Progress Tracking
-  progressPercentage    Int                   @default(0)
-  
-  // Client Communication
-  clientApprovalRequired Boolean              @default(false)
-  clientApprovedAt      DateTime?
-  clientFeedback        String?
-  
-  // Metadata
-  notes                 String?
-  internalNotes         String?
-  tags                  String[]              @default([])
-  
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  deletedAt             DateTime?
-  
-  // Relations
-  studio                Studio                @relation(fields: [studioId], references: [id])
-  booking               Booking?              @relation(fields: [bookingId], references: [id])
-  createdBy             User                  @relation("ProjectCreatedBy", fields: [createdById], references: [id])
-  editor                User?                 @relation("ProjectEditor", fields: [editorId], references: [id])
-  assignments           ProjectAssignment[]
-  files                 File[]
-  
-  @@index([studioId, status])
-  @@index([bookingId])
-  @@index([projectNumber])
-}
-
-model ProjectAssignment {
-  id                    String                @id @default(cuid())
-  projectId             String
-  userId                String
-  
-  // Assignment Details
-  role                  String                // editor, reviewer, etc.
-  assignedAt            DateTime              @default(now())
-  
-  // Status
-  isCompleted           Boolean               @default(false)
-  completedAt           DateTime?
-  
-  // Metadata
-  notes                 String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @up
