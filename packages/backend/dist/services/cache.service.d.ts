@@ -1,0 +1,33 @@
+import Redis from 'ioredis';
+export declare class CacheService {
+    private static instance;
+    private redis;
+    private logger;
+    private isConnected;
+    private constructor();
+    static getInstance(): CacheService;
+    private setupEventHandlers;
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    isReady(): boolean;
+    set(key: string, value: any, ttl?: number): Promise<void>;
+    get<T>(key: string): Promise<T | null>;
+    del(key: string): Promise<void>;
+    exists(key: string): Promise<boolean>;
+    setUserSession(userId: string, sessionData: any, ttl?: number): Promise<void>;
+    getUserSession(userId: string): Promise<any>;
+    deleteUserSession(userId: string): Promise<void>;
+    incrementRateLimit(key: string, windowMs: number): Promise<number>;
+    cacheStudioData(studioId: string, data: any, ttl?: number): Promise<void>;
+    getStudioData(studioId: string): Promise<any>;
+    invalidateStudioCache(studioId: string): Promise<void>;
+    cacheDashboardStats(studioId: string, stats: any): Promise<void>;
+    getDashboardStats(studioId: string): Promise<any>;
+    setEmailVerificationToken(email: string, token: string): Promise<void>;
+    getEmailVerificationToken(email: string): Promise<string | null>;
+    deleteEmailVerificationToken(email: string): Promise<void>;
+    setPasswordResetToken(email: string, token: string): Promise<void>;
+    getPasswordResetToken(email: string): Promise<string | null>;
+    deletePasswordResetToken(email: string): Promise<void>;
+    getClient(): Redis;
+}

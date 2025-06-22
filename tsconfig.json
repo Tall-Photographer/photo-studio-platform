@@ -12,19 +12,22 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
   },
   "include": [],
   "exclude": ["node_modules"],
   "references": [
     {
+      "path": "./packages/shared"
+    },
+    {
       "path": "./packages/backend"
     },
     {
       "path": "./packages/frontend"
-    },
-    {
-      "path": "./packages/shared"
     }
   ]
 }
